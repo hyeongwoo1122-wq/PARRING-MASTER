@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>패링 마스터 (Parrying Master) - Ultimate Edition</title>
+    <title>패링 마스터 (Parrying Master) - Special Edition</title>
     <style>
         :root {
             --bg-color: #08080a;
@@ -11,7 +11,7 @@
             --accent-color: #ff2a2a;
             --gold-color: #ffd700;
             --parry-color: #00ffcc;
-            --perfect-color: #ff00ff;
+            --perfect-color: #ffffff; /* 저스트패리 흰색 변경 */
         }
 
         body {
@@ -20,7 +20,6 @@
             font-family: 'Arial', sans-serif;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; overflow: hidden; user-select: none;
-            /* 모바일 롱터치 시 컨텍스트 메뉴 및 줌 방지 */
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
@@ -31,7 +30,7 @@
             position: relative; width: 800px;
             background: var(--panel-color); border: 4px solid #2d2d3d; border-radius: 16px;
             box-shadow: 0 25px 50px rgba(0,0,0,0.8);
-            max-width: 100vw; /* 모바일 화면 밖으로 탈출 방지 */
+            max-width: 100vw;
         }
 
         #lobby-screen {
@@ -75,6 +74,7 @@
         .hud-item { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; }
         #hp-display { color: var(--accent-color); font-size: 22px; }
         #combo-display { color: var(--parry-color); font-size: 20px; }
+        #skill-display { color: #ff9f43; font-size: 18px; font-weight: bold; }
         #score-display { color: #00ff66; font-size: 20px; }
 
         #boss-ui { width: 35%; display: none; flex-direction: column; align-items: flex-end; }
@@ -94,12 +94,12 @@
             background: #0b0b10; border-top: 2px solid #22222e; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
         }
         .action-btn { 
-            width: 130px; padding: 18px 0; font-size: 18px; font-weight: bold; color: white; border: 2px solid #444; border-radius: 12px; cursor: pointer; outline: none;
-            /* 모바일 터치 반응성 향상을 위해 크기 및 패딩 미세 조정 */
+            width: 160px; padding: 18px 0; font-size: 18px; font-weight: bold; color: white; border: 2px solid #444; border-radius: 12px; cursor: pointer; outline: none;
         }
         #btn-parry { background: linear-gradient(135deg, #0077bb, #004477); border-color: #0088ff; }
         #btn-jump { background: linear-gradient(135deg, #7722ee, #440099); border-color: #9944ff; }
-        #btn-duck { background: linear-gradient(135deg, #dd6600, #993300); border-color: #ff7711; }
+        #btn-skill { background: linear-gradient(135deg, #dd6600, #993300); border-color: #ff7711; opacity: 0.5; } /* 특수공격 버튼 */
+        #btn-skill.ready { opacity: 1; border-color: #fff; box-shadow: 0 0 10px #ff7711; }
         .action-btn:active, .action-btn.active { transform: scale(0.92); filter: brightness(1.3); }
         .key-hint { display: block; font-size: 11px; opacity: 0.6; margin-top: 4px; font-weight: normal; }
 
@@ -116,34 +116,34 @@
         <div class="title">PARRYING MASTER</div>
         
         <div class="guide-panel">
-            <div class="guide-title">⚔️ 모험가 생존 지침서 (조작법 & 무한 루프 안내)</div>
+            <div class="guide-title">⚔️ 모험가 생존 지침서 (조작법 & 특수공격 가이드)</div>
             <div class="guide-grid">
-                <div class="guide-item">🛡️ <span>패링</span> : [Z] / [J] / [→] <span style="color:#00ffcc;">(점프중 가능)</span></div>
+                <div class="guide-item">🛡️ <span>패링</span> : [Z] / [J] / [→]</div>
                 <div class="guide-item">🦘 <span>점프</span> : [Space] / [W] / [▲]</div>
-                <div class="guide-item">🧎 <span>숙이기</span> : [S] / [↓]</div>
+                <div class="guide-item">⚡ <span>특수공격</span> : [S] / [↓] <span style="color:#ff9f43;">(게이지 충전 시)</span></div>
                 <div class="guide-item">↔️ <span>스킨 이동</span> : 방향키 [←] / [→]</div>
             </div>
             <div style="margin-top: 8px; font-size: 11px; color: #bbb; text-align: center;">
-                ✨ 모바일 유저는 하단의 터치 패드로 똑같이 쾌적하게 조작이 가능합니다!<br>
+                💙 파란놈(3콤보): 무적 상태로 정면 대시 전멸기 | ❤️ 빨간놈(5콤보): 5초간 무적 광폭화 | 💛 노란놈(6콤보): 정면 관통 검기 발사<br>
                 ※ 보스의 <span style="color:#ff3838; font-weight:bold;">지진 광역 땅울림</span>과 <span style="color:#ff0055; font-weight:bold;">가시 돌진</span>은 패링 불가, 무조건 <span style="color:var(--parry-color);">점프</span>로 회피!
             </div>
         </div>
 
         <div class="skin-container">
-            <div class="skin-card selected" id="card-0" onclick="selectSkin(0, '#00aaff', '기사')">
+            <div class="skin-card selected" id="card-0" onclick="selectSkin(0, '#00aaff', '파란놈')">
                 <div style="font-weight:bold; color:#00aaff; font-size:14px;">푸른 기사</div>
                 <div class="skin-preview-box" id="prev-0"></div>
-                <span style="font-size:10px; color:#aaa;">[패링 판정 증가]</span>
+                <span style="font-size:10px; color:#aaa;">[특수: 3콤보 대시공격]</span>
             </div>
-            <div class="skin-card" id="card-1" onclick="selectSkin(1, '#ff1111', '광전사')">
+            <div class="skin-card" id="card-1" onclick="selectSkin(1, '#ff1111', '빨간놈')">
                 <div style="font-weight:bold; color:#ff1111; font-size:14px;">광전사</div>
                 <div class="skin-preview-box" id="prev-1"></div>
-                <span style="font-size:10px; color:#ff3e3e; font-weight:bold;">[하드코어:<br>체력1칸 / 레드 너클 / 점수2배]</span>
+                <span style="font-size:10px; color:#ff3e3e; font-weight:bold;">[하드코어:<br>체력1칸 / 5콤보 5초무적]</span>
             </div>
-            <div class="skin-card" id="card-2" onclick="selectSkin(2, '#cc00ff', '섀도우')">
-                <div style="font-weight:bold; color:#cc00ff; font-size:14px;">그림자 인형</div>
+            <div class="skin-card" id="card-2" onclick="selectSkin(2, '#ffcc00', '노란놈')">
+                <div style="font-weight:bold; color:#ffcc00; font-size:14px;">황금 인형</div>
                 <div class="skin-preview-box" id="prev-2"></div>
-                <span style="font-size:10px; color:#aaa;">[이동 잔상 및 빠른 콤보]</span>
+                <span style="font-size:10px; color:#aaa;">[특수: 6콤보 검기 발사]</span>
             </div>
         </div>
         <button class="btn-start" onclick="startGame()">전장 진입 (Enter)</button>
@@ -161,6 +161,7 @@
     <div id="top-ui">
         <div class="hud-item"><span>LIFE</span><span id="hp-display">❤️❤️❤️</span></div>
         <div class="hud-item"><span>COMBO</span><span id="combo-display">0</span></div>
+        <div class="hud-item"><span>SKILL</span><span id="skill-display">READY (0%)</span></div>
         <div class="hud-item"><span>SCORE</span><span id="score-display">0</span></div>
         <div id="boss-ui">
             <span style="color: #ff2a2a; font-weight: bold; font-size:12px; margin-bottom:3px;" id="boss-title">군주 악스발드 (STAGE 1)</span>
@@ -173,7 +174,7 @@
     <div id="control-panel">
         <button id="btn-parry" class="action-btn">패링<span class="key-hint">[Z]/[J]/[▶]</span></button>
         <button id="btn-jump" class="action-btn">점프<span class="key-hint">[Space]/[W]/[▲]</span></button>
-        <button id="btn-duck" class="action-btn">숙이기<span class="key-hint">[S]/[▼]</span></button>
+        <button id="btn-skill" class="action-btn">특수공격<span class="key-hint">[S]/[▼]</span></button>
     </div>
 </div>
 
@@ -193,11 +194,19 @@
     const ctx = canvas.getContext('2d');
 
     let gameState = 'LOBBY'; 
-    let player = { x: CONFIG.PLAYER_X, y: CONFIG.GROUND_Y, width: 40, height: 65, state: 'IDLE', color: '#00aaff', name: '기사', hp: CONFIG.BASE_HP, maxHp: CONFIG.BASE_HP, vY: 0, animFrame: 0, isParryingInAir: false };
+    let player = { 
+        x: CONFIG.PLAYER_X, y: CONFIG.GROUND_Y, width: 40, height: 65, state: 'IDLE', 
+        color: '#00aaff', name: '파란놈', hp: CONFIG.BASE_HP, maxHp: CONFIG.BASE_HP, 
+        vY: 0, animFrame: 0, isParryingInAir: false,
+        // 특수공격 관련 신규 데이터 변수
+        invincibleTimer: 0, dashTimer: 0, berserkTimer: 0, skillReady: false
+    };
+    
     let enemies = [];
     let particles = [];
     let floatingTexts = [];
     let shadows = []; 
+    let playerProjectiles = []; // 노란놈 검기용 배열
     
     let combo = 0;
     let score = 0; 
@@ -220,13 +229,13 @@
     const keys = {
         parry: ['z', 'j', 'Z', 'J', 'ArrowRight'], 
         jump: [' ', 'w', 'W', 'ArrowUp'],
-        duck: ['ArrowDown', 's', 'S']
+        skill: ['ArrowDown', 's', 'S'] // 특수공격 키 매핑
     };
 
     const SKINS = [
-        { color: '#00aaff', name: '기사' },
-        { color: '#ff1111', name: '광전사' }, 
-        { color: '#cc00ff', name: '섀도우' }
+        { color: '#00aaff', name: '파란놈' },
+        { color: '#ff1111', name: '빨간놈' }, 
+        { color: '#ffcc00', name: '노란놈' }
     ];
 
     function selectSkin(index, color, name) {
@@ -238,13 +247,13 @@
 
     function drawDetailedHumanoid(ctx, x, y, width, height, color, state, animFrame, isPlayer, extra = {}) {
         ctx.save();
-        let cHeight = (state === 'DUCK' && isPlayer) ? height * 0.6 : height;
-        let cY = (state === 'DUCK' && isPlayer) ? y + height * 0.4 : y;
+        let cHeight = height;
+        let cY = y;
         
         let bob = Math.sin(animFrame * 0.15) * 2; 
         if (state !== 'IDLE' && state !== 'PLAY_SHADOW') bob = 0;
 
-        // 1. 발 및 부츠
+        // 발 및 부츠
         ctx.fillStyle = '#111116'; 
         let legY = cY + cHeight - 10;
         if(state === 'JUMP' && isPlayer) legY -= 5;
@@ -254,29 +263,29 @@
         ctx.fillRect(x + 4, legY, 9, 3);
         ctx.fillRect(x + width - 13, legY, 9, 3);
 
-        // 2. 하의 / 바지
+        // 하의
         ctx.fillStyle = '#222230';
         ctx.fillRect(x + 5, cY + cHeight - 22 + bob, width - 10, 12);
 
-        // 3. 벨트
+        // 벨트
         ctx.fillStyle = '#5c3a21'; 
         ctx.fillRect(x + 3, cY + cHeight - 25 + bob, width - 6, 4);
         ctx.fillStyle = '#ffd700'; 
         ctx.fillRect(x + width/2 - 2, cY + cHeight - 25 + bob, 4, 4);
 
-        // 4. 상의 갑옷 복부 및 흉부 분할
+        // 갑옷
         ctx.fillStyle = color;
         ctx.fillRect(x + 4, cY + 24 + bob, width - 8, 16); 
         ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.15; 
         ctx.fillRect(x + 4, cY + 16 + bob, width - 8, 8);
         ctx.restore(); ctx.save(); 
 
-        // 5. 어깨 갑옷 장식
+        // 어깨
         ctx.fillStyle = '#4b4b5c';
         ctx.fillRect(x + 1, cY + 15 + bob, 5, 6); 
         ctx.fillRect(x + width - 6, cY + 15 + bob, 5, 6); 
 
-        // 6. 얼굴 스킨 & 머리카락 / 투구
+        // 얼굴 및 투구
         ctx.fillStyle = '#ffdbac'; 
         ctx.fillRect(x + 7, cY + 5 + bob, width - 14, 11);
         
@@ -289,7 +298,7 @@
         let eyeX = isPlayer ? x + width - 12 : x + 7;
         ctx.fillRect(eyeX, cY + 4 + bob, 4, 3);
 
-        // 7. 무기 및 팔 동작 (레드 너클)
+        // 무기 및 팔 동작
         ctx.fillStyle = color;
         ctx.strokeStyle = isPlayer ? '#ffffff' : '#ff4444';
         ctx.lineWidth = 4;
@@ -297,7 +306,7 @@
         let isCurrentParrying = (isPlayer && (state === 'PARRY' || player.isParryingInAir));
 
         if(isPlayer) {
-            if(color === '#ff1111') { 
+            if(color === '#ff1111') { // 빨간놈 너클 무기 유지
                 ctx.fillStyle = '#ff2a2a'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000';
                 if(isCurrentParrying) {
                     ctx.fillRect(x + width, cY + 16, 16, 12); 
@@ -309,7 +318,7 @@
             } else { 
                 if(isCurrentParrying) {
                     ctx.fillRect(x + width - 4, cY + 18, 12, 6); 
-                    ctx.strokeStyle = color === '#cc00ff' ? '#ff00ff' : '#e0f7fa';
+                    ctx.strokeStyle = color === '#ffcc00' ? '#ffd700' : '#e0f7fa';
                     ctx.lineWidth = 5; ctx.shadowBlur = 12; ctx.shadowColor = ctx.strokeStyle;
                     ctx.beginPath(); ctx.moveTo(x + width, cY + 21); ctx.lineTo(x + width + 40, cY + 21); ctx.stroke();
                 } else {
@@ -321,18 +330,12 @@
             if(extra.isBoss) {
                 ctx.lineWidth = 6; ctx.strokeStyle = extra.isAngryBoss ? '#ff0000' : '#ff3e3e'; 
                 ctx.shadowBlur = extra.isAngryBoss ? 18 : 10; ctx.shadowColor = ctx.strokeStyle;
-                
                 if(extra.subType === 'CHARGE_ATTACK') {
                     ctx.beginPath(); ctx.moveTo(x + 10, cY + 40); ctx.lineTo(x - 55, cY + 40); ctx.stroke();
                 } else if(extra.isDelayPattern && !extra.delayFinished) {
                     ctx.beginPath(); ctx.moveTo(x + 10, cY + 15); ctx.lineTo(x - 22, cY - 40); ctx.stroke();
                 } else {
                     ctx.beginPath(); ctx.moveTo(x + 10, cY + 25); ctx.lineTo(x - 50, cY + 50); ctx.stroke();
-                }
-                
-                if(extra.subType === 'ROAR') {
-                    ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.roundRect(x - 35, cY - 45, 55, 25, 6); ctx.fill();
-                    ctx.fillStyle = '#000000'; ctx.font = 'bold 13px Arial'; ctx.fillText("?!? 🔥", x - 27, cY - 28);
                 }
             } else {
                 ctx.beginPath(); ctx.moveTo(x + 5, cY + 22); ctx.lineTo(x - 20, cY + 8); ctx.stroke();
@@ -356,19 +359,19 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        selectSkin(0, '#00aaff', '기사');
+        selectSkin(0, '#00aaff', '파란놈');
         initLobbyPreviews();
     });
 
     function triggerParry() {
-        if(gameState !== 'PLAY') return;
-        if(player.state === 'IDLE' || player.state === 'DUCK' || player.state === 'JUMP') {
+        if(gameState !== 'PLAY' || player.dashTimer > 0) return;
+        if(player.state === 'IDLE' || player.state === 'JUMP') {
             if(player.state === 'JUMP') player.isParryingInAir = true;
             else player.state = 'PARRY';
             
             parryTimer = Date.now(); visualFeedback('btn-parry');
             
-            let currentWindow = player.color === '#00aaff' ? CONFIG.PARRY_WINDOW + 40 : CONFIG.PARRY_WINDOW;
+            let currentWindow = player.name === '파란놈' ? CONFIG.PARRY_WINDOW + 40 : CONFIG.PARRY_WINDOW;
             setTimeout(() => { 
                 player.isParryingInAir = false;
                 if(player.state === 'PARRY') player.state = 'IDLE'; 
@@ -376,9 +379,41 @@
         }
     }
 
-    function triggerJump() { if(gameState !== 'PLAY') return; if(player.state === 'IDLE' || player.state === 'DUCK') { player.state = 'JUMP'; player.vY = -12; visualFeedback('btn-jump'); } }
-    function startDuck() { if(gameState !== 'PLAY') return; if(player.state === 'IDLE') { player.state = 'DUCK'; visualFeedback('btn-duck'); } }
-    function stopDuck() { if(gameState !== 'PLAY') return; if(player.state === 'DUCK') player.state = 'IDLE'; }
+    function triggerJump() { 
+        if(gameState !== 'PLAY' || player.dashTimer > 0) return; 
+        if(player.state === 'IDLE') { 
+            player.state = 'JUMP'; player.vY = -12; visualFeedback('btn-jump'); 
+        } 
+    }
+
+    // --- 특수공격 시스템 발동 로직 ---
+    function triggerSpecialSkill() {
+        if(gameState !== 'PLAY' || !player.skillReady) return;
+
+        player.skillReady = false;
+        visualFeedback('btn-skill');
+
+        if(player.name === '파란놈') {
+            player.dashTimer = 25; // 대시 프레임 수
+            createFloatingText("무적 신속 대시!!", player.x, player.y - 40, '#00aaff', 20, false);
+        } 
+        else if(player.name === '빨간놈') {
+            player.berserkTimer = 300; // 5초 (60fps * 5)
+            createFloatingText("광전사의 분노!", player.x - 30, player.y - 40, '#ff1111', 22, true);
+        } 
+        else if(player.name === '노란놈') {
+            playerProjectiles.push({
+                x: player.x + player.width,
+                y: player.y + 15,
+                width: 50,
+                height: 40,
+                speed: 12
+            });
+            createFloatingText("황금 검기 발사!", player.x, player.y - 40, '#ffcc00', 20, false);
+        }
+
+        updateUI();
+    }
 
     function togglePause() {
         if(gameState === 'PLAY') { gameState = 'PAUSE'; document.getElementById('pause-overlay').style.display = 'flex'; } 
@@ -398,22 +433,16 @@
         if(gameState !== 'PLAY') return;
         if(keys.parry.includes(e.key)) { e.preventDefault(); triggerParry(); }
         if(keys.jump.includes(e.key)) triggerJump();
-        if(keys.duck.includes(e.key)) startDuck();
+        if(keys.skill.includes(e.key)) triggerSpecialSkill();
     });
 
-    window.addEventListener('keyup', (e) => { if(gameState !== 'PLAY') return; if(keys.duck.includes(e.key)) stopDuck(); });
-
-    // --- 모바일 터치 이벤트 완벽 바인딩 세팅 완료 ---
     document.getElementById('btn-parry').addEventListener('mousedown', triggerParry);
     document.getElementById('btn-jump').addEventListener('mousedown', triggerJump);
-    document.getElementById('btn-duck').addEventListener('mousedown', startDuck);
-    document.getElementById('btn-duck').addEventListener('mouseup', stopDuck);
-    document.getElementById('btn-duck').addEventListener('mouseleave', stopDuck);
+    document.getElementById('btn-skill').addEventListener('mousedown', triggerSpecialSkill);
 
     document.getElementById('btn-parry').addEventListener('touchstart', (e) => { e.preventDefault(); triggerParry(); });
     document.getElementById('btn-jump').addEventListener('touchstart', (e) => { e.preventDefault(); triggerJump(); });
-    document.getElementById('btn-duck').addEventListener('touchstart', (e) => { e.preventDefault(); startDuck(); });
-    document.getElementById('btn-duck').addEventListener('touchend', (e) => { e.preventDefault(); stopDuck(); });
+    document.getElementById('btn-skill').addEventListener('touchstart', (e) => { e.preventDefault(); triggerSpecialSkill(); });
 
     function startGame() {
         document.getElementById('lobby-screen').style.display = 'none';
@@ -424,11 +453,13 @@
         gameState = 'PLAY'; player.color = selectedSkinColor; player.name = selectedSkinName;
         currentStage = 1; 
         
-        if (player.color === '#ff1111') { player.hp = 1; player.maxHp = 1; } 
+        if (player.name === '빨간놈') { player.hp = 1; player.maxHp = 1; } 
         else { player.hp = CONFIG.BASE_HP; player.maxHp = CONFIG.BASE_HP; }
         
         player.state = 'IDLE'; player.y = CONFIG.GROUND_Y; player.vY = 0; player.animFrame = 0; player.isParryingInAir = false;
-        enemies = []; particles = []; floatingTexts = []; shadows = [];
+        player.invincibleTimer = 0; player.dashTimer = 0; player.berserkTimer = 0; player.skillReady = false;
+        
+        enemies = []; particles = []; floatingTexts = []; shadows = []; playerProjectiles = [];
         combo = 0; score = 0; successfulParries = 0; freezeFrames = 0;
         isBossMode = false; boss = null; lastSpawnTime = Date.now();
         warningText = ""; warningTimer = 0; earthquakeActive = false; earthquakeDamageTriggered = false;
@@ -437,11 +468,7 @@
     }
 
     function nextStageSetup() {
-        currentStage++;
-        isBossMode = false;
-        boss = null;
-        successfulParries = 0; 
-        enemies = [];
+        currentStage++; isBossMode = false; boss = null; successfulParries = 0; enemies = []; playerProjectiles = [];
         lastSpawnTime = Date.now();
         createFloatingText(`STAGE ${currentStage} START! 🔥`, canvas.width/2 - 100, 150, '#ffd700', 28, true);
         updateUI();
@@ -450,6 +477,30 @@
     function update() {
         if(gameState !== 'PLAY') return;
         if (freezeFrames > 0) { freezeFrames--; requestAnimationFrame(update); return; }
+
+        // 타이머 감소 연산
+        if(player.invincibleTimer > 0) player.invincibleTimer--;
+        if(player.berserkTimer > 0) {
+            player.berserkTimer--;
+            if(player.berserkTimer <= 0) updateUI();
+        }
+
+        // 파란놈 특수공격: 무적 대시 연산
+        if(player.dashTimer > 0) {
+            player.dashTimer--;
+            player.state = 'PARRY'; // 대시 중 모션 강제 고정
+            createParticle(player.x + 10, player.y + 30, '#00aaff', 2);
+            
+            // 대시 중 화면 안의 모든 짤몹 자동 전멸 처리 기믹
+            for(let i = enemies.length - 1; i >= 0; i--) {
+                if(!enemies[i].isBoss && enemies[i].type !== 'BOSS_DIAGONAL_ARROW' && enemies[i].type !== 'BOSS_SWORD') {
+                    createParticle(enemies[i].x, enemies[i].y, '#00aaff', 8);
+                    enemies.splice(i, 1);
+                    score += 50;
+                }
+            }
+            if(player.dashTimer <= 0) { player.state = 'IDLE'; updateUI(); }
+        }
 
         let currentShakeForce = screenShake;
         if(earthquakeActive && warningTimer > 0) currentShakeForce = Math.max(screenShake, 9);
@@ -469,7 +520,11 @@
             ctx.strokeStyle = '#ff3300'; ctx.lineWidth = 4; ctx.beginPath();
             for(let i=0; i<canvas.width; i+=25) { ctx.lineTo(i, CONFIG.GROUND_Y + 65 + (Math.random() - 0.5) * 16); }
             ctx.stroke();
-            if(warningTimer < 25 && !earthquakeDamageTriggered) { if(player.state !== 'JUMP') { handlePlayerDamage(); earthquakeDamageTriggered = true; } }
+            if(warningTimer < 25 && !earthquakeDamageTriggered) { 
+                if(player.state !== 'JUMP' && player.dashTimer <= 0 && player.berserkTimer <= 0) { 
+                    handlePlayerDamage(); earthquakeDamageTriggered = true; 
+                } 
+            }
         }
 
         // 바닥
@@ -479,20 +534,80 @@
 
         if(player.state === 'JUMP') { player.y += player.vY; player.vY += 0.55; if(player.y >= CONFIG.GROUND_Y) { player.y = CONFIG.GROUND_Y; player.state = 'IDLE'; earthquakeDamageTriggered = false; } }
 
-        if(player.color === '#cc00ff' && player.animFrame % 4 === 0) { shadows.push({ x: player.x, y: player.y, state: player.state, opacity: 0.5 }); }
+        // 잔상 효과
+        if(player.name === '노란놈' && player.animFrame % 4 === 0) { shadows.push({ x: player.x, y: player.y, state: player.state, opacity: 0.5 }); }
         for(let i = shadows.length - 1; i >= 0; i--) {
             let sh = shadows[i]; sh.opacity -= 0.04; if(sh.opacity <= 0) { shadows.splice(i, 1); continue; }
-            ctx.save(); ctx.globalAlpha = sh.opacity; drawDetailedHumanoid(ctx, sh.x, sh.y, player.width, player.height, 'rgba(204, 0, 255, 0.5)', sh.state, player.animFrame, true); ctx.restore();
+            ctx.save(); ctx.globalAlpha = sh.opacity; drawDetailedHumanoid(ctx, sh.x, sh.y, player.width, player.height, 'rgba(255, 204, 0, 0.4)', sh.state, player.animFrame, true); ctx.restore();
         }
 
         drawDetailedHumanoid(ctx, player.x, player.y, player.width, player.height, player.color, player.state, player.animFrame, true);
         
+        // 빨간놈 특수공격 문구 실시간 헤드업 디스플레이 (깜빡임 경고 기능 구현)
+        if(player.berserkTimer > 0) {
+            ctx.save();
+            let showText = true;
+            if(player.berserkTimer <= 60 && Math.floor(player.berserkTimer / 5) % 2 === 0) {
+                showText = false; // 종료 1초 전 깜빡임 구현
+            }
+            if(showText) {
+                ctx.font = 'bold 15px Arial'; ctx.fillStyle = '#ff1111'; ctx.textAlign = 'center';
+                ctx.strokeStyle = '#000000'; ctx.lineWidth = 3;
+                ctx.strokeText("광전사의 분노!", player.x + player.width/2, player.y - 15);
+                ctx.fillText("광전사의 분노!", player.x + player.width/2, player.y - 15);
+            }
+            ctx.restore();
+        }
+
+        // 원형 네온 배리어 구체
         if(player.state === 'PARRY' || player.isParryingInAir) {
             ctx.save();
-            let glowColor = player.color === '#cc00ff' ? 'rgba(255, 0, 255, 0.4)' : (player.color === '#ff1111' ? 'rgba(255, 42, 42, 0.4)' : 'rgba(0, 255, 204, 0.4)'); 
+            let glowColor = player.color === '#ff1111' ? 'rgba(255, 42, 42, 0.4)' : (player.color === '#ffcc00' ? 'rgba(255, 204, 0, 0.4)' : 'rgba(0, 255, 204, 0.4)'); 
             ctx.strokeStyle = glowColor; ctx.lineWidth = 5; ctx.shadowBlur = 18; ctx.shadowColor = glowColor;
-            ctx.fillStyle = player.color === '#cc00ff' ? 'rgba(255, 0, 255, 0.05)' : (player.color === '#ff1111' ? 'rgba(255, 42, 42, 0.05)' : 'rgba(0, 255, 204, 0.05)');
+            ctx.fillStyle = player.color === '#ff1111' ? 'rgba(255, 42, 42, 0.05)' : (player.color === '#ffcc00' ? 'rgba(255, 204, 0, 0.05)' : 'rgba(0, 255, 204, 0.05)');
             ctx.beginPath(); ctx.arc(player.x + player.width/2, player.y + player.height/2, 42, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+        }
+
+        // 노란놈 특수공격 검기 투사체 이동 및 연산 루프
+        for(let si = playerProjectiles.length - 1; si >= 0; si--) {
+            let proj = playerProjectiles[si];
+            proj.x += proj.speed;
+            
+            // 검기 이펙트 드로잉
+            ctx.save();
+            ctx.fillStyle = '#ffcc00'; ctx.shadowBlur = 15; ctx.shadowColor = '#ffcc00';
+            ctx.beginPath();
+            ctx.moveTo(proj.x, proj.y);
+            ctx.lineTo(proj.x + proj.width, proj.y + proj.height/2);
+            ctx.lineTo(proj.x, proj.y + proj.height);
+            ctx.lineTo(proj.x + 15, proj.y + proj.height/2);
+            ctx.fill();
+            ctx.restore();
+
+            // 적 및 보스 타격 충돌 박스 처리
+            if(isBossMode && boss && proj.x + proj.width >= boss.renderX && proj.x <= boss.renderX + 75) {
+                boss.hp -= 2; // 검기 타격 시 보스 강한 피해
+                score += 500;
+                createParticle(proj.x, proj.y + 20, '#ffcc00', 15);
+                createFloatingText("검기 관통 타격! -2", boss.renderX, CONFIG.GROUND_Y - 40, '#ffcc00', 22, false);
+                playerProjectiles.splice(si, 1);
+                if(boss.hp <= 0) { score += 2000 * currentStage; nextStageSetup(); }
+                updateUI();
+                continue;
+            }
+
+            for(let i = enemies.length - 1; i >= 0; i--) {
+                if(proj.x + proj.width >= enemies[i].x && proj.x <= enemies[i].x + enemies[i].width) {
+                    createParticle(enemies[i].x, enemies[i].y, '#ffcc00', 10);
+                    enemies.splice(i, 1);
+                    score += 100;
+                    successfulParries++;
+                    if(!isBossMode && successfulParries >= CONFIG.BOSS_TRIGGER_SCORE) { enemies = []; initBoss(); }
+                    updateUI();
+                }
+            }
+
+            if(proj.x > canvas.width) playerProjectiles.splice(si, 1);
         }
 
         let now = Date.now();
@@ -510,7 +625,12 @@
             if(boss.isAngryCharge) {
                 boss.renderX -= boss.chargeSpeed;
                 if(boss.renderX <= player.x + player.width && boss.renderX + 75 >= player.x) {
-                    if(player.state === 'PARRY' || player.isParryingInAir) { boss.isAngryCharge = false; boss.renderX = 630; handleParrySuccess({ x: player.x + 40, y: player.y + 30, height: 10, parryable: true }); } 
+                    if(player.state === 'PARRY' || player.isParryingInAir) { 
+                        boss.isAngryCharge = false; boss.renderX = 630; handleParrySuccess({ x: player.x + 40, y: player.y + 30, height: 10, parryable: true }); 
+                    } 
+                    else if (player.dashTimer > 0 || player.berserkTimer > 0) {
+                        boss.isAngryCharge = false; boss.renderX = 630; // 무적 상태 통과
+                    }
                     else { boss.isAngryCharge = false; boss.renderX = 630; handlePlayerDamage(); }
                 }
                 if(boss.renderX < 40) { boss.isAngryCharge = false; boss.renderX = 630; }
@@ -525,9 +645,7 @@
             let e = enemies[i];
             
             if(e.type === 'ARROW' && e.isTrick && e.x < 480 && !e.tricked) {
-                e.speed *= 1.6; 
-                e.y = CONFIG.GROUND_Y + (Math.random() > 0.5 ? 5 : 25); 
-                e.tricked = true;
+                e.speed *= 1.6; e.y = CONFIG.GROUND_Y + (Math.random() > 0.5 ? 5 : 25); e.tricked = true;
                 createParticle(e.x, e.y, '#ffd700', 6);
             }
 
@@ -537,20 +655,10 @@
             } else {
                 if(e.type === 'BOSS_DIAGONAL_ARROW') {
                     if(!e.isDropping) {
-                        e.x -= e.speed * 0.4; 
-                        e.y -= 7; // 위로 상승선
-                        
-                        // 2. [대각 화살 추적 알고리즘 교정] 0.8초 경과 시, 플레이어의 실시간 X 좌표를 타깃으로 100% 동기화 고정 유도
-                        if(now - e.spawnTime > 800) { 
-                            e.isDropping = true; 
-                            e.y = CONFIG.GROUND_Y - 140; 
-                            e.x = player.x + 195; // 궤도 충돌점이 항상 플레이어 몸통 내부를 관통하도록 완벽 피드백 보정
-                            e.speed = 12.5; 
-                        } 
+                        e.x -= e.speed * 0.4; e.y -= 7; 
+                        if(now - e.spawnTime > 800) { e.isDropping = true; e.y = CONFIG.GROUND_Y - 140; e.x = player.x + 195; e.speed = 12.5; } 
                     } else {
-                        // 사선 낙하 각도 정밀 연산식 적용 (X축 이동 속도 비례 Y축 급강하 연동)
-                        e.x -= e.speed; 
-                        e.y += 5.8; 
+                        e.x -= e.speed; e.y += 5.8; 
                     }
                 } else {
                     e.x -= e.speed;
@@ -574,11 +682,10 @@
                 ctx.lineTo(e.x, e.y + e.height); ctx.fill(); ctx.restore();
             } 
             else if(e.type === 'FAKE_EFF') { continue; }
-            else { drawDetailedHumanoid(ctx, e.x, e.y, e.width, e.height, e.color, 'IDLE', player.animFrame, false, e); }
+            else { drawDetailedHumanoid(ctx, e.x, e.y, e.width, e.height, e.color, 'IDLE', player.animFrame, false, extra); }
 
             let eTop = e.y; let eBottom = e.y + e.height;
             let pTop = player.y; let pBottom = player.y + player.height;
-            if(player.state === 'DUCK') pTop = player.y + player.height * 0.4;
 
             if(e.x <= player.x + player.width + 8 && e.x + e.width >= player.x) {
                 if (eTop < pBottom && eBottom > pTop) {
@@ -586,8 +693,14 @@
                     if(player.state === 'PARRY' || player.isParryingInAir) {
                         if(e.parryable) { enemies.splice(i, 1); handleParrySuccess(e); continue; }
                     } 
+                    
+                    // 무적 타임 작동 시 충돌 무시 패스
+                    if(player.dashTimer > 0 || player.berserkTimer > 0) {
+                        enemies.splice(i, 1); continue;
+                    }
+
                     if(e.attackType === 'SWORD') { isHit = true; } 
-                    else if(e.attackType === 'ARROW') { if(player.state !== 'DUCK') isHit = true; } 
+                    else if(e.attackType === 'ARROW') { isHit = true; } // 숙이기 판정 삭제로 상시 히트
                     else if(e.attackType === 'CHARGE') { if(player.state !== 'JUMP') isHit = true; } 
 
                     if(isHit) { enemies.splice(i, 1); handlePlayerDamage(); }
@@ -597,7 +710,7 @@
         }
 
         if(warningTimer > 0) {
-            warningTimer--; ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(100, 100, 600, 60); ctx.strokeStyle = '#ff003c'; ctx.lineWidth = 3; strokeRect(100, 100, 600, 60);
+            warningTimer--; ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(100, 100, 600, 60); ctx.strokeStyle = '#ff003c'; ctx.lineWidth = 3; ctx.strokeRect(100, 100, 600, 60);
             if(Math.floor(warningTimer / 6) % 2 === 0) { ctx.fillStyle = '#ff2a2a'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000'; ctx.fillText(warningText, canvas.width/2, 138); }
             ctx.restore(); if(warningTimer <= 0) { earthquakeActive = false; }
         }
@@ -607,15 +720,12 @@
         requestAnimationFrame(update);
     }
 
-    // 디버깅용 스트로크 헬퍼
-    function strokeRect(x,y,w,h) { ctx.strokeRect(x,y,w,h); }
-
     function spawnEnemy() {
         let rand = Math.random();
         let type = 'SWORD', y = CONFIG.GROUND_Y, width = 35, height = 65, color = '#ec4849', attackType = 'SWORD', isTrick = false;
 
         if(rand < 0.35) { 
-            type = 'ARROW'; y = CONFIG.GROUND_Y + 5; width = 40; height = 12; color = '#ff9f43'; attackType = 'ARROW';
+            type = 'ARROW'; y = CONFIG.GROUND_Y + 25; width = 40; height = 12; color = '#ff9f43'; attackType = 'ARROW';
             if(Math.random() > 0.45) isTrick = true; 
         } else if(rand < 0.65) { 
             type = 'CHARGE'; y = CONFIG.GROUND_Y + 35; width = 55; height = 30; color = '#8395a7'; attackType = 'CHARGE';
@@ -628,9 +738,7 @@
     }
 
     function initBoss() {
-        if(isBossMode) return; isBossMode = true; document.getElementById('boss-ui').style.display = 'flex'; 
-        createFloatingText(`STAGE ${currentStage} BOSS ACTOR RISE!!`, canvas.width/2 - 140, 70, '#ff2a2a', 24);
-        
+        if(isBossMode) return; isBossMode = true; document.getElementById('boss-ui').style.display = 'flex'; createFloatingText(`STAGE ${currentStage} BOSS ACTOR RISE!!`, canvas.width/2 - 140, 70, '#ff2a2a', 24);
         let scaledBossHp = CONFIG.BOSS_MAX_HP + (currentStage - 1) * 2;
         boss = { hp: scaledBossHp, maxHp: scaledBossHp, lastAttackTime: Date.now(), attackCooldown: 1600, renderX: 850, isActingDelay: false, currentType: 'NONE', isAngryCharge: false, chargeSpeed: 0 };
         updateUI();
@@ -646,13 +754,12 @@
                 enemies.push({ x: boss.renderX - 30, y: CONFIG.GROUND_Y, width: 45, height: 65, type: 'BOSS_SWORD', attackType: 'SWORD', speed: 3, color: '#ff0055', parryable: true, isDelayPattern: true, delayUntil: now + 1000, delayFinished: false, isBoss: true });
             } 
             else if(pattern === 1) { 
-                enemies.push({ x: boss.renderX - 20, y: CONFIG.GROUND_Y + 5, width: 40, height: 12, type: 'ARROW', attackType: 'ARROW', speed: 5, color: '#ff9f43', parryable: true, isTrick: true, tricked: false });
+                enemies.push({ x: boss.renderX - 20, y: CONFIG.GROUND_Y + 25, width: 40, height: 12, type: 'ARROW', attackType: 'ARROW', speed: 5, color: '#ff9f43', parryable: true, isTrick: true, tricked: false });
             }
             else if(pattern === 2) { 
                 enemies.push({ x: boss.renderX - 30, y: CONFIG.GROUND_Y + 35, width: 75, height: 30, type: 'CHARGE', attackType: 'CHARGE', speed: 9.5, color: '#b41414', parryable: false });
             }
             else if(pattern === 3) { 
-                // 대각 활 쏘기
                 enemies.push({ x: boss.renderX - 10, y: CONFIG.GROUND_Y - 20, width: 35, height: 12, type: 'BOSS_DIAGONAL_ARROW', attackType: 'ARROW', speed: 5, color: '#ffd700', parryable: true, isDropping: false, spawnTime: now });
             }
             else if(pattern === 4) {
@@ -665,16 +772,25 @@
 
     function handleParrySuccess(enemy) {
         let elapsed = Date.now() - parryTimer; let isPerfect = elapsed < (CONFIG.PARRY_WINDOW * 0.4); 
-        if(player.color === '#cc00ff') combo++;
         combo++; if(!isBossMode) successfulParries++; 
         
-        let skinMultiplier = player.color === '#ff1111' ? 2.0 : 1.0; 
+        // --- 특수공격 활성화 수치 연산 조건문 ---
+        let targetCombo = 3;
+        if(player.name === '빨간놈') targetCombo = 5;
+        if(player.name === '노란놈') targetCombo = 6;
+
+        if(combo >= targetCombo) {
+            player.skillReady = true;
+        }
+
+        let skinMultiplier = player.name === '빨간놈' ? 2.0 : 1.0; 
         let baseParryScore = 100 + (combo * 20); let finalAddedScore = 0;
 
         if (isPerfect) {
             freezeFrames = 8; screenShake = 20; finalAddedScore = Math.floor(baseParryScore * 3 * skinMultiplier); score += finalAddedScore;
             createParticle(enemy.x, enemy.y, 'var(--perfect-color)', 25);
-            createFloatingText(`🔥 JUST PARRY! +${finalAddedScore}`, player.x - 35, player.y - 45, 'var(--perfect-color)', 24, true);
+            // 저스트패리 글자색 완전 흰색(#ffffff) 교체 변경
+            createFloatingText(`JUST PARRY! +${finalAddedScore}`, player.x - 35, player.y - 45, 'var(--perfect-color)', 24, true);
         } else {
             screenShake = 12; finalAddedScore = Math.floor(baseParryScore * skinMultiplier); score += finalAddedScore;
             createParticle(enemy.x, enemy.y, 'var(--parry-color)', 15);
@@ -689,17 +805,14 @@
         if(isBossMode && boss) {
             boss.hp--; score += 300; 
             createFloatingText(`BOSS HP -1 (+300)`, boss.renderX - 20, CONFIG.GROUND_Y - 40, '#ffd700', 25, false);
-            
-            if(boss.hp <= 0) { 
-                score += 2000 * currentStage; 
-                nextStageSetup(); 
-            }
+            if(boss.hp <= 0) { score += 2000 * currentStage; nextStageSetup(); }
         }
         updateUI();
     }
 
     function handlePlayerDamage() {
-        combo = 0; player.hp--; screenShake = 22; createParticle(player.x + player.width/2, player.y + player.height/2, '#ff1111', 25);
+        combo = 0; player.hp--; screenShake = 22; player.skillReady = false;
+        createParticle(player.x + player.width/2, player.y + player.height/2, '#ff1111', 25);
         createFloatingText("피격 (COMBO RESET)", player.x, player.y - 40, '#ff3838', 18, false);
         if(player.hp <= 0) { endGame(false); }
         updateUI();
@@ -709,6 +822,20 @@
         let hearts = ''; for(let i=0; i<player.maxHp; i++) { hearts += i < player.hp ? '❤️' : '🖤'; }
         document.getElementById('hp-display').innerText = hearts; document.getElementById('combo-display').innerText = combo; document.getElementById('score-display').innerText = score.toLocaleString(); 
         
+        // 스킬 UI 문자열 핸들러
+        let targetCombo = player.name === '파란놈' ? 3 : (player.name === '빨간놈' ? 5 : 6);
+        let currentPct = Math.min(100, Math.floor((combo / targetCombo) * 100));
+        const skillUI = document.getElementById('skill-display');
+        const skillBtn = document.getElementById('btn-skill');
+
+        if(player.skillReady) {
+            skillUI.innerText = "READY (100%)"; skillUI.style.color = "#00ff66";
+            if(skillBtn) skillBtn.classList.add('ready');
+        } else {
+            skillUI.innerText = `${currentPct}%`; skillUI.style.color = "#ff9f43";
+            if(skillBtn) skillBtn.classList.remove('ready');
+        }
+
         document.getElementById('boss-title').innerText = `군주 악스발드 (STAGE ${currentStage})`;
         if(isBossMode && boss) { let pct = (boss.hp / boss.maxHp) * 100; document.getElementById('boss-hp-bar').style.width = `${pct}%`; }
     }
@@ -722,7 +849,13 @@
         for(let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vX; p.y += p.vY; p.alpha -= p.decay; if(p.alpha <= 0) { particles.splice(i, 1); continue; } ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
         for(let i = floatingTexts.length - 1; i >= 0; i--) {
             let t = floatingTexts[i]; t.y -= 1.2; t.alpha -= 0.022; if(t.alpha <= 0) { floatingTexts.splice(i, 1); continue; }
-            ctx.save(); ctx.globalAlpha = t.alpha; ctx.font = `bold ${t.size}px Arial`; ctx.strokeStyle = '#000000'; ctx.lineWidth = 5; ctx.strokeText(t.text, t.x, t.y); ctx.fillStyle = t.color; if(t.isPerfect) { ctx.shadowBlur = 12; ctx.shadowColor = '#ff00ff'; } ctx.fillText(t.text, t.x, t.y); ctx.restore();
+            ctx.save(); ctx.globalAlpha = t.alpha; ctx.font = `bold ${t.size}px Arial`; 
+            
+            // 검은색 굵은 외각선 테두리 가독성 패치 반영
+            ctx.strokeStyle = '#000000'; ctx.lineWidth = 5; ctx.strokeText(t.text, t.x, t.y); 
+            ctx.fillStyle = t.color; 
+            if(t.isPerfect && t.color === '#ffffff') { ctx.shadowBlur = 10; ctx.shadowColor = '#ffffff'; }
+            ctx.fillText(t.text, t.x, t.y); ctx.restore();
         }
     }
 
@@ -730,7 +863,7 @@
         gameState = 'END'; const msgScreen = document.getElementById('msg-screen'); const title = document.getElementById('msg-title'); const sub = document.getElementById('msg-sub'); const finalScoreDisplay = document.getElementById('msg-score');
         msgScreen.style.display = 'flex'; finalScoreDisplay.innerText = `최종 점수 : ${score.toLocaleString()} SCORE`;
         title.innerText = "GAME OVER 💀"; title.style.color = CONFIG.ACCENT_COLOR; 
-        sub.innerText = `STAGE ${currentStage}에서 군주의 광폭 분노 돌격과 전역 지진의 위력에 압도당했습니다.`;
+        sub.innerText = `STAGE ${currentStage}에서 군주의 무자비한 억까 공습에 쓰러졌습니다.`;
     }
 
     function resetToLobby() { document.getElementById('msg-screen').style.display = 'none'; document.getElementById('lobby-screen').style.display = 'flex'; gameState = 'LOBBY'; ctx.clearRect(0, 0, canvas.width, canvas.height); }
