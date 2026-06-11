@@ -2,8 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>패링 마스터 (Parrying Master) - 무한 스테이지 패치</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>패링 마스터 (Parrying Master) - Ultimate Edition</title>
     <style>
         :root {
             --bg-color: #08080a;
@@ -20,12 +20,18 @@
             font-family: 'Arial', sans-serif;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; overflow: hidden; user-select: none;
+            /* 모바일 롱터치 시 컨텍스트 메뉴 및 줌 방지 */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
         }
 
         #game-container {
             position: relative; width: 800px;
             background: var(--panel-color); border: 4px solid #2d2d3d; border-radius: 16px;
             box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+            max-width: 100vw; /* 모바일 화면 밖으로 탈출 방지 */
         }
 
         #lobby-screen {
@@ -75,7 +81,7 @@
         .boss-bar-bg { width: 100%; height: 12px; background: #222; border-radius: 6px; overflow: hidden; border: 1px solid #444; }
         #boss-hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #ff0055, #ff2a2a); box-shadow: 0 0 8px #ff0055; transition: width 0.1s ease; }
 
-        canvas { display: block; }
+        canvas { display: block; max-width: 100%; height: auto; margin: 0 auto; }
 
         #pause-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -87,11 +93,14 @@
             display: flex; justify-content: center; gap: 25px; padding: 20px;
             background: #0b0b10; border-top: 2px solid #22222e; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
         }
-        .action-btn { width: 130px; padding: 14px 0; font-size: 17px; font-weight: bold; color: white; border: 2px solid #444; border-radius: 10px; cursor: pointer; outline: none; }
+        .action-btn { 
+            width: 130px; padding: 18px 0; font-size: 18px; font-weight: bold; color: white; border: 2px solid #444; border-radius: 12px; cursor: pointer; outline: none;
+            /* 모바일 터치 반응성 향상을 위해 크기 및 패딩 미세 조정 */
+        }
         #btn-parry { background: linear-gradient(135deg, #0077bb, #004477); border-color: #0088ff; }
         #btn-jump { background: linear-gradient(135deg, #7722ee, #440099); border-color: #9944ff; }
         #btn-duck { background: linear-gradient(135deg, #dd6600, #993300); border-color: #ff7711; }
-        .action-btn:active, .action-btn.active { transform: scale(0.94); filter: brightness(1.25); }
+        .action-btn:active, .action-btn.active { transform: scale(0.92); filter: brightness(1.3); }
         .key-hint { display: block; font-size: 11px; opacity: 0.6; margin-top: 4px; font-weight: normal; }
 
         #msg-screen {
@@ -115,7 +124,7 @@
                 <div class="guide-item">↔️ <span>스킨 이동</span> : 방향키 [←] / [→]</div>
             </div>
             <div style="margin-top: 8px; font-size: 11px; color: #bbb; text-align: center;">
-                ✨ 보스를 처단하면 <span style="color:var(--gold-color); font-weight:bold;">다음 스테이지(무한 레이드)</span>로 자동 연결됩니다!<br>
+                ✨ 모바일 유저는 하단의 터치 패드로 똑같이 쾌적하게 조작이 가능합니다!<br>
                 ※ 보스의 <span style="color:#ff3838; font-weight:bold;">지진 광역 땅울림</span>과 <span style="color:#ff0055; font-weight:bold;">가시 돌진</span>은 패링 불가, 무조건 <span style="color:var(--parry-color);">점프</span>로 회피!
             </div>
         </div>
@@ -195,7 +204,7 @@
     let successfulParries = 0; 
     let isBossMode = false;
     let boss = null;
-    let currentStage = 1; // 무한 레이드 다단계 스테이지 관리 변수
+    let currentStage = 1; 
     
     let parryTimer = 0; 
     let lastSpawnTime = 0;
@@ -394,11 +403,17 @@
 
     window.addEventListener('keyup', (e) => { if(gameState !== 'PLAY') return; if(keys.duck.includes(e.key)) stopDuck(); });
 
+    // --- 모바일 터치 이벤트 완벽 바인딩 세팅 완료 ---
     document.getElementById('btn-parry').addEventListener('mousedown', triggerParry);
     document.getElementById('btn-jump').addEventListener('mousedown', triggerJump);
     document.getElementById('btn-duck').addEventListener('mousedown', startDuck);
     document.getElementById('btn-duck').addEventListener('mouseup', stopDuck);
     document.getElementById('btn-duck').addEventListener('mouseleave', stopDuck);
+
+    document.getElementById('btn-parry').addEventListener('touchstart', (e) => { e.preventDefault(); triggerParry(); });
+    document.getElementById('btn-jump').addEventListener('touchstart', (e) => { e.preventDefault(); triggerJump(); });
+    document.getElementById('btn-duck').addEventListener('touchstart', (e) => { e.preventDefault(); startDuck(); });
+    document.getElementById('btn-duck').addEventListener('touchend', (e) => { e.preventDefault(); stopDuck(); });
 
     function startGame() {
         document.getElementById('lobby-screen').style.display = 'none';
@@ -407,7 +422,7 @@
         document.getElementById('pause-overlay').style.display = 'none';
         
         gameState = 'PLAY'; player.color = selectedSkinColor; player.name = selectedSkinName;
-        currentStage = 1; // 1라운드 초기화
+        currentStage = 1; 
         
         if (player.color === '#ff1111') { player.hp = 1; player.maxHp = 1; } 
         else { player.hp = CONFIG.BASE_HP; player.maxHp = CONFIG.BASE_HP; }
@@ -421,16 +436,13 @@
         updateUI(); requestAnimationFrame(update);
     }
 
-    // 다음 라운드 진입 전용 연동 브릿지 함수 생성
     function nextStageSetup() {
         currentStage++;
         isBossMode = false;
         boss = null;
-        successfulParries = 0; // 보스전 트리거용 카운트만 리셋
+        successfulParries = 0; 
         enemies = [];
         lastSpawnTime = Date.now();
-        
-        // 스테이지 클리어 문구 팝업
         createFloatingText(`STAGE ${currentStage} START! 🔥`, canvas.width/2 - 100, 150, '#ffd700', 28, true);
         updateUI();
     }
@@ -525,20 +537,20 @@
             } else {
                 if(e.type === 'BOSS_DIAGONAL_ARROW') {
                     if(!e.isDropping) {
-                        e.x -= e.speed * 0.4; e.y -= 7; // 상승선
+                        e.x -= e.speed * 0.4; 
+                        e.y -= 7; // 위로 상승선
                         
-                        // 2. [대각 화살 궤도 완전 수정] 0.8초 경과 시, 플레이어의 실시간 X 좌표와 화살 위치의 정확한 비례 추적 공식 대입
+                        // 2. [대각 화살 추적 알고리즘 교정] 0.8초 경과 시, 플레이어의 실시간 X 좌표를 타깃으로 100% 동기화 고정 유도
                         if(now - e.spawnTime > 800) { 
                             e.isDropping = true; 
                             e.y = CONFIG.GROUND_Y - 140; 
-                            // 플레이어 위치를 정밀 관통하는 낙하 시작 시점 X 좌표 동적 설계
-                            e.x = player.x + 215; 
+                            e.x = player.x + 195; // 궤도 충돌점이 항상 플레이어 몸통 내부를 관통하도록 완벽 피드백 보정
                             e.speed = 12.5; 
                         } 
                     } else {
-                        // 플레이어 머리를 스치고 지나가도록 사선 고속 강하 각도 동기화
+                        // 사선 낙하 각도 정밀 연산식 적용 (X축 이동 속도 비례 Y축 급강하 연동)
                         e.x -= e.speed; 
-                        e.y += 4.3; 
+                        e.y += 5.8; 
                     }
                 } else {
                     e.x -= e.speed;
@@ -585,7 +597,7 @@
         }
 
         if(warningTimer > 0) {
-            warningTimer--; ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(100, 100, 600, 60); ctx.strokeStyle = '#ff003c'; ctx.lineWidth = 3; ctx.strokeRect(100, 100, 600, 60);
+            warningTimer--; ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(100, 100, 600, 60); ctx.strokeStyle = '#ff003c'; ctx.lineWidth = 3; strokeRect(100, 100, 600, 60);
             if(Math.floor(warningTimer / 6) % 2 === 0) { ctx.fillStyle = '#ff2a2a'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000'; ctx.fillText(warningText, canvas.width/2, 138); }
             ctx.restore(); if(warningTimer <= 0) { earthquakeActive = false; }
         }
@@ -594,6 +606,9 @@
         if (currentShakeForce > 0) ctx.restore();
         requestAnimationFrame(update);
     }
+
+    // 디버깅용 스트로크 헬퍼
+    function strokeRect(x,y,w,h) { ctx.strokeRect(x,y,w,h); }
 
     function spawnEnemy() {
         let rand = Math.random();
@@ -616,7 +631,6 @@
         if(isBossMode) return; isBossMode = true; document.getElementById('boss-ui').style.display = 'flex'; 
         createFloatingText(`STAGE ${currentStage} BOSS ACTOR RISE!!`, canvas.width/2 - 140, 70, '#ff2a2a', 24);
         
-        // 스테이지 증가비례 보스 맥스체력 스케일링 가산 (+2씩 증가)
         let scaledBossHp = CONFIG.BOSS_MAX_HP + (currentStage - 1) * 2;
         boss = { hp: scaledBossHp, maxHp: scaledBossHp, lastAttackTime: Date.now(), attackCooldown: 1600, renderX: 850, isActingDelay: false, currentType: 'NONE', isAngryCharge: false, chargeSpeed: 0 };
         updateUI();
@@ -638,7 +652,7 @@
                 enemies.push({ x: boss.renderX - 30, y: CONFIG.GROUND_Y + 35, width: 75, height: 30, type: 'CHARGE', attackType: 'CHARGE', speed: 9.5, color: '#b41414', parryable: false });
             }
             else if(pattern === 3) { 
-                // 대각 저격 화살 패턴 실행
+                // 대각 활 쏘기
                 enemies.push({ x: boss.renderX - 10, y: CONFIG.GROUND_Y - 20, width: 35, height: 12, type: 'BOSS_DIAGONAL_ARROW', attackType: 'ARROW', speed: 5, color: '#ffd700', parryable: true, isDropping: false, spawnTime: now });
             }
             else if(pattern === 4) {
@@ -676,9 +690,8 @@
             boss.hp--; score += 300; 
             createFloatingText(`BOSS HP -1 (+300)`, boss.renderX - 20, CONFIG.GROUND_Y - 40, '#ffd700', 25, false);
             
-            // 보스 격파 시 라운드 클리어 연동 처리 (끝이 아니라 다음 라운드로 브릿지)
             if(boss.hp <= 0) { 
-                score += 2000 * currentStage; // 스테이지 보너스 점수
+                score += 2000 * currentStage; 
                 nextStageSetup(); 
             }
         }
@@ -717,7 +730,7 @@
         gameState = 'END'; const msgScreen = document.getElementById('msg-screen'); const title = document.getElementById('msg-title'); const sub = document.getElementById('msg-sub'); const finalScoreDisplay = document.getElementById('msg-score');
         msgScreen.style.display = 'flex'; finalScoreDisplay.innerText = `최종 점수 : ${score.toLocaleString()} SCORE`;
         title.innerText = "GAME OVER 💀"; title.style.color = CONFIG.ACCENT_COLOR; 
-        sub.innerText = `STAGE ${currentStage}에서 군주의 광폭 돌격과 전역 지진의 위력에 압도당했습니다.`;
+        sub.innerText = `STAGE ${currentStage}에서 군주의 광폭 분노 돌격과 전역 지진의 위력에 압도당했습니다.`;
     }
 
     function resetToLobby() { document.getElementById('msg-screen').style.display = 'none'; document.getElementById('lobby-screen').style.display = 'flex'; gameState = 'LOBBY'; ctx.clearRect(0, 0, canvas.width, canvas.height); }
