@@ -137,8 +137,8 @@
                 <span style="font-size:10px; color:#aaa;">[특수: 3콤보 대시공격]</span>
             </div>
             <div class="skin-card" id="card-1" onclick="selectSkin(1, '#ff1111', '빨간놈')">
-                <div style="font-weight:bold; color:#ff1111; font-size:14px;">광전사</div>
                 <div class="skin-preview-box" id="prev-1"></div>
+                <div style="font-weight:bold; color:#ff1111; font-size:14px;">광전사</div>
                 <span style="font-size:10px; color:#ff3e3e; font-weight:bold;">[하드코어:<br>체력1칸 / 5콤보 5초무적]</span>
             </div>
             <div class="skin-card" id="card-2" onclick="selectSkin(2, '#ffcc00', '노란놈')">
@@ -200,6 +200,9 @@
     const ctx = canvas.getContext('2d');
 
     let gameState = 'LOBBY'; 
+    let selectedSkinColor = '#00aaff';
+    let selectedSkinName = '파란놈';
+    
     let player = { 
         x: CONFIG.PLAYER_X, y: CONFIG.GROUND_Y, width: 40, height: 65, state: 'IDLE', 
         color: '#00aaff', name: '파란놈', hp: CONFIG.BASE_HP, maxHp: CONFIG.BASE_HP, 
@@ -215,8 +218,8 @@
     
     let combo = 0;
     let score = 0; 
-    let highscore = 0; // 하이스코어 변수
-    let isNewRecord = false; // 이번 판 기록 경신 여부
+    let highscore = 0; 
+    let isNewRecord = false; 
     let successfulParries = 0; 
     let isBossMode = false;
     let boss = null;
@@ -245,7 +248,6 @@
         { color: '#ffcc00', name: '노란놈' }
     ];
 
-    // 하이스코어 로드 기능 실행
     function loadHighScore() {
         let saved = localStorage.getItem('parry_master_highscore');
         if(saved) {
@@ -370,7 +372,7 @@
     window.addEventListener('DOMContentLoaded', () => {
         selectSkin(0, '#00aaff', '파란놈');
         initLobbyPreviews();
-        loadHighScore(); // 시작 시 기록 로드
+        loadHighScore(); 
     });
 
     function triggerParry() {
@@ -714,7 +716,6 @@
         });
     }
 
-    // 하이스코어 연동 점수 합산 가산 모듈
     function addScore(amount) {
         score += amount;
         if(score > highscore) {
@@ -744,7 +745,7 @@
                 enemies.push({ x: boss.renderX - 30, y: CONFIG.GROUND_Y, width: 45, height: 65, type: 'BOSS_SWORD', attackType: 'SWORD', speed: 3, color: '#ff0055', parryable: true, isDelayPattern: true, delayUntil: now + 1000, delayFinished: false, isBoss: true });
             } 
             else if(pattern === 1) { 
-                enemies.push({ x: boss.renderX - 20, y: CONFIG.GROUND_Y + 25, width: 40; height: 12, type: 'ARROW', attackType: 'ARROW', speed: 5, color: '#ff9f43', parryable: true, isTrick: true, tricked: false });
+                enemies.push({ x: boss.renderX - 20, y: CONFIG.GROUND_Y + 25, width: 40, height: 12, type: 'ARROW', attackType: 'ARROW', speed: 5, color: '#ff9f43', parryable: true, isTrick: true, tricked: false });
             }
             else if(pattern === 2) { 
                 enemies.push({ x: boss.renderX - 30, y: CONFIG.GROUND_Y + 35, width: 75, height: 30, type: 'CHARGE', attackType: 'CHARGE', speed: 9.5, color: '#b41414', parryable: false });
