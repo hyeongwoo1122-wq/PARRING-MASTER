@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>패링 마스터 (Parrying Master) - 무한 스테이지 패치</title>
+    <style>
+        :root {
+            --bg-color: #08080a;
+            --panel-color: #12121a;
+            --accent-color: #ff2a2a;
+            --gold-color: #ffd700;
+            --parry-color: #00ffcc;
+            --perfect-color: #ff00ff;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color); color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; overflow: hidden; user-select: none;
+        }
+
+        #game-container {
+            position: relative; width: 800px;
+            background: var(--panel-color); border: 4px solid #2d2d3d; border-radius: 16px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+        }
+
+        #lobby-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(8, 8, 10, 0.98);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; border-radius: 12px; padding: 20px; box-sizing: border-box;
+        }
+
+        .title {
+            font-size: 40px; font-weight: 900; color: var(--gold-color); margin-bottom: 5px;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.7); letter-spacing: 3px;
+        }
+
+        .skin-container { display: flex; gap: 15px; margin: 15px 0; }
+        .skin-card {
+            width: 140px; padding: 12px 5px; background: #1a1a26; border: 3px solid #333344;
+            border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease;
+        }
+        .skin-card.selected {
+            border-color: var(--gold-color); box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            transform: scale(1.05); background: #222235;
+        }
+        .skin-preview-box { width: 50px; height: 50px; margin: 10px auto; background: #0b0b10; border-radius: 6px; border: 1px solid #444; }
+
+        .guide-panel { background: #151522; border: 2px solid #2d2d3d; border-radius: 10px; padding: 12px 20px; margin-bottom: 15px; width: 85%; font-size: 13px; line-height: 1.6; }
+        .guide-title { color: var(--parry-color); font-weight: bold; margin-bottom: 6px; text-align: center; font-size: 14px; }
+        .guide-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 20px; }
+        .guide-item span { color: var(--gold-color); font-weight: bold; }
+
+        .btn-start {
+            padding: 12px 45px; font-size: 20px; background: linear-gradient(135deg, #ff2a2a, #990000);
+            color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 6px 15px rgba(255,42,42,0.4); transition: transform 0.1s;
+        }
+
+        #top-ui {
+            display: flex; justify-content: space-between; align-items: center; padding: 12px 25px;
+            background: #0b0b10; border-bottom: 2px solid #22222e; border-top-left-radius: 12px; border-top-right-radius: 12px;
+        }
+        .hud-item { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; }
+        #hp-display { color: var(--accent-color); font-size: 22px; }
+        #combo-display { color: var(--parry-color); font-size: 20px; }
+        #score-display { color: #00ff66; font-size: 20px; }
+
+        #boss-ui { width: 35%; display: none; flex-direction: column; align-items: flex-end; }
+        .boss-bar-bg { width: 100%; height: 12px; background: #222; border-radius: 6px; overflow: hidden; border: 1px solid #444; }
+        #boss-hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #ff0055, #ff2a2a); box-shadow: 0 0 8px #ff0055; transition: width 0.1s ease; }
+
+        canvas { display: block; }
+
+        #pause-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 8; font-size: 32px; font-weight: bold; color: var(--gold-color);
+        }
+
+        #control-panel {
+            display: flex; justify-content: center; gap: 25px; padding: 20px;
+            background: #0b0b10; border-top: 2px solid #22222e; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+        }
+        .action-btn { width: 130px; padding: 14px 0; font-size: 17px; font-weight: bold; color: white; border: 2px solid #444; border-radius: 10px; cursor: pointer; outline: none; }
+        #btn-parry { background: linear-gradient(135deg, #0077bb, #004477); border-color: #0088ff; }
+        #btn-jump { background: linear-gradient(135deg, #7722ee, #440099); border-color: #9944ff; }
+        #btn-duck { background: linear-gradient(135deg, #dd6600, #993300); border-color: #ff7711; }
+        .action-btn:active, .action-btn.active { transform: scale(0.94); filter: brightness(1.25); }
+        .key-hint { display: block; font-size: 11px; opacity: 0.6; margin-top: 4px; font-weight: normal; }
+
+        #msg-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 8, 0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="lobby-screen">
+        <div class="title">PARRYING MASTER</div>
+        
+        <div class="guide-panel">
+            <div class="guide-title">⚔️ 모험가 생존 지침서 (조작법 & 무한 루프 안내)</div>
+            <div class="guide-grid">
+                <div class="guide-item">🛡️ <span>패링</span> : [Z] / [J] / [→] <span style="color:#00ffcc;">(점프중 가능)</span></div>
+                <div class="guide-item">🦘 <span>점프</span> : [Space] / [W] / [▲]</div>
+                <div class="guide-item">🧎 <span>숙이기</span> : [S] / [↓]</div>
+                <div class="guide-item">↔️ <span>스킨 이동</span> : 방향키 [←] / [→]</div>
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: #bbb; text-align: center;">
+                ✨ 보스를 처단하면 <span style="color:var(--gold-color); font-weight:bold;">다음 스테이지(무한 레이드)</span>로 자동 연결됩니다!<br>
+                ※ 보스의 <span style="color:#ff3838; font-weight:bold;">지진 광역 땅울림</span>과 <span style="color:#ff0055; font-weight:bold;">가시 돌진</span>은 패링 불가, 무조건 <span style="color:var(--parry-color);">점프</span>로 회피!
+            </div>
+        </div>
+
+        <div class="skin-container">
+            <div class="skin-card selected" id="card-0" onclick="selectSkin(0, '#00aaff', '기사')">
+                <div style="font-weight:bold; color:#00aaff; font-size:14px;">푸른 기사</div>
+                <div class="skin-preview-box" id="prev-0"></div>
+                <span style="font-size:10px; color:#aaa;">[패링 판정 증가]</span>
+            </div>
+            <div class="skin-card" id="card-1" onclick="selectSkin(1, '#ff1111', '광전사')">
+                <div style="font-weight:bold; color:#ff1111; font-size:14px;">광전사</div>
+                <div class="skin-preview-box" id="prev-1"></div>
+                <span style="font-size:10px; color:#ff3e3e; font-weight:bold;">[하드코어:<br>체력1칸 / 레드 너클 / 점수2배]</span>
+            </div>
+            <div class="skin-card" id="card-2" onclick="selectSkin(2, '#cc00ff', '섀도우')">
+                <div style="font-weight:bold; color:#cc00ff; font-size:14px;">그림자 인형</div>
+                <div class="skin-preview-box" id="prev-2"></div>
+                <span style="font-size:10px; color:#aaa;">[이동 잔상 및 빠른 콤보]</span>
+            </div>
+        </div>
+        <button class="btn-start" onclick="startGame()">전장 진입 (Enter)</button>
+    </div>
+
+    <div id="pause-overlay">PAUSED<div style="font-size:16px; color:#aaa; margin-top:10px;">Press ESC to Resume</div></div>
+
+    <div id="msg-screen">
+        <div id="msg-title" style="font-size: 42px; font-weight: 900; margin-bottom: 15px;"></div>
+        <div id="msg-sub" style="color: #bbb; margin-bottom: 10px; font-size:16px;"></div>
+        <div id="msg-score" style="color: #00ff66; font-size: 24px; font-weight: bold; margin-bottom: 30px;"></div>
+        <button class="btn-start" onclick="resetToLobby()">대기실로 이동</button>
+    </div>
+
+    <div id="top-ui">
+        <div class="hud-item"><span>LIFE</span><span id="hp-display">❤️❤️❤️</span></div>
+        <div class="hud-item"><span>COMBO</span><span id="combo-display">0</span></div>
+        <div class="hud-item"><span>SCORE</span><span id="score-display">0</span></div>
+        <div id="boss-ui">
+            <span style="color: #ff2a2a; font-weight: bold; font-size:12px; margin-bottom:3px;" id="boss-title">군주 악스발드 (STAGE 1)</span>
+            <div class="boss-bar-bg"><div id="boss-hp-bar"></div></div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="340"></canvas>
+
+    <div id="control-panel">
+        <button id="btn-parry" class="action-btn">패링<span class="key-hint">[Z]/[J]/[▶]</span></button>
+        <button id="btn-jump" class="action-btn">점프<span class="key-hint">[Space]/[W]/[▲]</span></button>
+        <button id="btn-duck" class="action-btn">숙이기<span class="key-hint">[S]/[▼]</span></button>
+    </div>
+</div>
+
+<script>
+    const CONFIG = {
+        PLAYER_X: 160,
+        GROUND_Y: 220,     
+        BASE_HP: 3,
+        PARRY_WINDOW: 240, 
+        COMBO_HEAL: 5,     
+        BOSS_MAX_HP: 10,   
+        SPAWN_INTERVAL: 1100, 
+        BOSS_TRIGGER_SCORE: 5 
+    };
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let gameState = 'LOBBY'; 
+    let player = { x: CONFIG.PLAYER_X, y: CONFIG.GROUND_Y, width: 40, height: 65, state: 'IDLE', color: '#00aaff', name: '기사', hp: CONFIG.BASE_HP, maxHp: CONFIG.BASE_HP, vY: 0, animFrame: 0, isParryingInAir: false };
+    let enemies = [];
+    let particles = [];
+    let floatingTexts = [];
+    let shadows = []; 
+    
+    let combo = 0;
+    let score = 0; 
+    let successfulParries = 0; 
+    let isBossMode = false;
+    let boss = null;
+    let currentStage = 1; // 무한 레이드 다단계 스테이지 관리 변수
+    
+    let parryTimer = 0; 
+    let lastSpawnTime = 0;
+    let screenShake = 0;
+    let warningText = ""; 
+    let warningTimer = 0;
+    let earthquakeActive = false; 
+    let earthquakeDamageTriggered = false;
+    
+    let freezeFrames = 0; 
+    let currentSkinIndex = 0; 
+
+    const keys = {
+        parry: ['z', 'j', 'Z', 'J', 'ArrowRight'], 
+        jump: [' ', 'w', 'W', 'ArrowUp'],
+        duck: ['ArrowDown', 's', 'S']
+    };
+
+    const SKINS = [
+        { color: '#00aaff', name: '기사' },
+        { color: '#ff1111', name: '광전사' }, 
+        { color: '#cc00ff', name: '섀도우' }
+    ];
+
+    function selectSkin(index, color, name) {
+        currentSkinIndex = index;
+        const cards = document.querySelectorAll('.skin-card');
+        cards.forEach((card, i) => { card.classList.toggle('selected', i === index); });
+        selectedSkinColor = color; selectedSkinName = name;
+    }
+
+    function drawDetailedHumanoid(ctx, x, y, width, height, color, state, animFrame, isPlayer, extra = {}) {
+        ctx.save();
+        let cHeight = (state === 'DUCK' && isPlayer) ? height * 0.6 : height;
+        let cY = (state === 'DUCK' && isPlayer) ? y + height * 0.4 : y;
+        
+        let bob = Math.sin(animFrame * 0.15) * 2; 
+        if (state !== 'IDLE' && state !== 'PLAY_SHADOW') bob = 0;
+
+        // 1. 발 및 부츠
+        ctx.fillStyle = '#111116'; 
+        let legY = cY + cHeight - 10;
+        if(state === 'JUMP' && isPlayer) legY -= 5;
+        ctx.fillRect(x + 4, legY, 9, 10); 
+        ctx.fillRect(x + width - 13, legY, 9, 10); 
+        ctx.fillStyle = '#3c3c4a'; 
+        ctx.fillRect(x + 4, legY, 9, 3);
+        ctx.fillRect(x + width - 13, legY, 9, 3);
+
+        // 2. 하의 / 바지
+        ctx.fillStyle = '#222230';
+        ctx.fillRect(x + 5, cY + cHeight - 22 + bob, width - 10, 12);
+
+        // 3. 벨트
+        ctx.fillStyle = '#5c3a21'; 
+        ctx.fillRect(x + 3, cY + cHeight - 25 + bob, width - 6, 4);
+        ctx.fillStyle = '#ffd700'; 
+        ctx.fillRect(x + width/2 - 2, cY + cHeight - 25 + bob, 4, 4);
+
+        // 4. 상의 갑옷 복부 및 흉부 분할
+        ctx.fillStyle = color;
+        ctx.fillRect(x + 4, cY + 24 + bob, width - 8, 16); 
+        ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.15; 
+        ctx.fillRect(x + 4, cY + 16 + bob, width - 8, 8);
+        ctx.restore(); ctx.save(); 
+
+        // 5. 어깨 갑옷 장식
+        ctx.fillStyle = '#4b4b5c';
+        ctx.fillRect(x + 1, cY + 15 + bob, 5, 6); 
+        ctx.fillRect(x + width - 6, cY + 15 + bob, 5, 6); 
+
+        // 6. 얼굴 스킨 & 머리카락 / 투구
+        ctx.fillStyle = '#ffdbac'; 
+        ctx.fillRect(x + 7, cY + 5 + bob, width - 14, 11);
+        
+        ctx.fillStyle = color;
+        ctx.fillRect(x + 5, cY + bob - 2, width - 10, 8); 
+        ctx.fillStyle = '#333'; 
+        ctx.fillRect(x + (isPlayer ? width*0.5 : 4), cY + 4 + bob, width*0.4, 4);
+
+        ctx.fillStyle = isPlayer ? '#00ffff' : (extra.isAngryBoss ? '#ff0000' : '#ff0055');
+        let eyeX = isPlayer ? x + width - 12 : x + 7;
+        ctx.fillRect(eyeX, cY + 4 + bob, 4, 3);
+
+        // 7. 무기 및 팔 동작 (레드 너클)
+        ctx.fillStyle = color;
+        ctx.strokeStyle = isPlayer ? '#ffffff' : '#ff4444';
+        ctx.lineWidth = 4;
+
+        let isCurrentParrying = (isPlayer && (state === 'PARRY' || player.isParryingInAir));
+
+        if(isPlayer) {
+            if(color === '#ff1111') { 
+                ctx.fillStyle = '#ff2a2a'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000';
+                if(isCurrentParrying) {
+                    ctx.fillRect(x + width, cY + 16, 16, 12); 
+                    ctx.fillStyle = '#fff'; ctx.fillRect(x + width + 12, cY + 18, 4, 8);
+                } else {
+                    ctx.fillRect(x + width - 6, cY + 22 + bob, 10, 10);
+                    ctx.fillRect(x - 2, cY + 22 + bob, 10, 10);
+                }
+            } else { 
+                if(isCurrentParrying) {
+                    ctx.fillRect(x + width - 4, cY + 18, 12, 6); 
+                    ctx.strokeStyle = color === '#cc00ff' ? '#ff00ff' : '#e0f7fa';
+                    ctx.lineWidth = 5; ctx.shadowBlur = 12; ctx.shadowColor = ctx.strokeStyle;
+                    ctx.beginPath(); ctx.moveTo(x + width, cY + 21); ctx.lineTo(x + width + 40, cY + 21); ctx.stroke();
+                } else {
+                    ctx.fillRect(x + width - 8, cY + 20 + bob, 8, 8);
+                    ctx.beginPath(); ctx.moveTo(x - 2 + width, cY + 24 + bob); ctx.lineTo(x + width + 18, cY + 2 + bob); ctx.stroke();
+                }
+            }
+        } else {
+            if(extra.isBoss) {
+                ctx.lineWidth = 6; ctx.strokeStyle = extra.isAngryBoss ? '#ff0000' : '#ff3e3e'; 
+                ctx.shadowBlur = extra.isAngryBoss ? 18 : 10; ctx.shadowColor = ctx.strokeStyle;
+                
+                if(extra.subType === 'CHARGE_ATTACK') {
+                    ctx.beginPath(); ctx.moveTo(x + 10, cY + 40); ctx.lineTo(x - 55, cY + 40); ctx.stroke();
+                } else if(extra.isDelayPattern && !extra.delayFinished) {
+                    ctx.beginPath(); ctx.moveTo(x + 10, cY + 15); ctx.lineTo(x - 22, cY - 40); ctx.stroke();
+                } else {
+                    ctx.beginPath(); ctx.moveTo(x + 10, cY + 25); ctx.lineTo(x - 50, cY + 50); ctx.stroke();
+                }
+                
+                if(extra.subType === 'ROAR') {
+                    ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.roundRect(x - 35, cY - 45, 55, 25, 6); ctx.fill();
+                    ctx.fillStyle = '#000000'; ctx.font = 'bold 13px Arial'; ctx.fillText("?!? 🔥", x - 27, cY - 28);
+                }
+            } else {
+                ctx.beginPath(); ctx.moveTo(x + 5, cY + 22); ctx.lineTo(x - 20, cY + 8); ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
+    function initLobbyPreviews() {
+        ['prev-0', 'prev-1', 'prev-2'].forEach((id, idx) => {
+            let pContainer = document.getElementById(id); if (!pContainer) return;
+            pContainer.innerHTML = `<canvas id="canvas-${id}" width="50" height="50" style="background:transparent; display:block;"></canvas>`;
+            let targetCanvas = document.getElementById(`canvas-${id}`);
+            let cX = targetCanvas.getContext('2d');
+            
+            setInterval(() => {
+                cX.clearRect(0, 0, 50, 50);
+                drawDetailedHumanoid(cX, 5, 2, 35, 43, SKINS[idx].color, 'IDLE', Date.now() / 70, true);
+            }, 1000 / 30);
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        selectSkin(0, '#00aaff', '기사');
+        initLobbyPreviews();
+    });
+
+    function triggerParry() {
+        if(gameState !== 'PLAY') return;
+        if(player.state === 'IDLE' || player.state === 'DUCK' || player.state === 'JUMP') {
+            if(player.state === 'JUMP') player.isParryingInAir = true;
+            else player.state = 'PARRY';
+            
+            parryTimer = Date.now(); visualFeedback('btn-parry');
+            
+            let currentWindow = player.color === '#00aaff' ? CONFIG.PARRY_WINDOW + 40 : CONFIG.PARRY_WINDOW;
+            setTimeout(() => { 
+                player.isParryingInAir = false;
+                if(player.state === 'PARRY') player.state = 'IDLE'; 
+            }, currentWindow);
+        }
+    }
+
+    function triggerJump() { if(gameState !== 'PLAY') return; if(player.state === 'IDLE' || player.state === 'DUCK') { player.state = 'JUMP'; player.vY = -12; visualFeedback('btn-jump'); } }
+    function startDuck() { if(gameState !== 'PLAY') return; if(player.state === 'IDLE') { player.state = 'DUCK'; visualFeedback('btn-duck'); } }
+    function stopDuck() { if(gameState !== 'PLAY') return; if(player.state === 'DUCK') player.state = 'IDLE'; }
+
+    function togglePause() {
+        if(gameState === 'PLAY') { gameState = 'PAUSE'; document.getElementById('pause-overlay').style.display = 'flex'; } 
+        else if(gameState === 'PAUSE') { gameState = 'PLAY'; document.getElementById('pause-overlay').style.display = 'none'; requestAnimationFrame(update); }
+    }
+
+    function visualFeedback(btnId) { const btn = document.getElementById(btnId); if(btn) { btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 100); } }
+
+    window.addEventListener('keydown', (e) => {
+        if(gameState === 'LOBBY') {
+            if(e.key === 'ArrowLeft') { currentSkinIndex = (currentSkinIndex === 0) ? 2 : currentSkinIndex - 1; selectSkin(currentSkinIndex, SKINS[currentSkinIndex].color, SKINS[currentSkinIndex].name); }
+            if(e.key === 'ArrowRight') { currentSkinIndex = (currentSkinIndex === 2) ? 0 : currentSkinIndex + 1; selectSkin(currentSkinIndex, SKINS[currentSkinIndex].color, SKINS[currentSkinIndex].name); }
+            if(e.key === 'Enter') { startGame(); }
+            return;
+        }
+        if(e.key === 'Escape') { togglePause(); return; } 
+        if(gameState !== 'PLAY') return;
+        if(keys.parry.includes(e.key)) { e.preventDefault(); triggerParry(); }
+        if(keys.jump.includes(e.key)) triggerJump();
+        if(keys.duck.includes(e.key)) startDuck();
+    });
+
+    window.addEventListener('keyup', (e) => { if(gameState !== 'PLAY') return; if(keys.duck.includes(e.key)) stopDuck(); });
+
+    document.getElementById('btn-parry').addEventListener('mousedown', triggerParry);
+    document.getElementById('btn-jump').addEventListener('mousedown', triggerJump);
+    document.getElementById('btn-duck').addEventListener('mousedown', startDuck);
+    document.getElementById('btn-duck').addEventListener('mouseup', stopDuck);
+    document.getElementById('btn-duck').addEventListener('mouseleave', stopDuck);
+
+    function startGame() {
+        document.getElementById('lobby-screen').style.display = 'none';
+        document.getElementById('msg-screen').style.display = 'none';
+        document.getElementById('boss-ui').style.display = 'none';
+        document.getElementById('pause-overlay').style.display = 'none';
+        
+        gameState = 'PLAY'; player.color = selectedSkinColor; player.name = selectedSkinName;
+        currentStage = 1; // 1라운드 초기화
+        
+        if (player.color === '#ff1111') { player.hp = 1; player.maxHp = 1; } 
+        else { player.hp = CONFIG.BASE_HP; player.maxHp = CONFIG.BASE_HP; }
+        
+        player.state = 'IDLE'; player.y = CONFIG.GROUND_Y; player.vY = 0; player.animFrame = 0; player.isParryingInAir = false;
+        enemies = []; particles = []; floatingTexts = []; shadows = [];
+        combo = 0; score = 0; successfulParries = 0; freezeFrames = 0;
+        isBossMode = false; boss = null; lastSpawnTime = Date.now();
+        warningText = ""; warningTimer = 0; earthquakeActive = false; earthquakeDamageTriggered = false;
+        
+        updateUI(); requestAnimationFrame(update);
+    }
+
+    // 다음 라운드 진입 전용 연동 브릿지 함수 생성
+    function nextStageSetup() {
+        currentStage++;
+        isBossMode = false;
+        boss = null;
+        successfulParries = 0; // 보스전 트리거용 카운트만 리셋
+        enemies = [];
+        lastSpawnTime = Date.now();
+        
+        // 스테이지 클리어 문구 팝업
+        createFloatingText(`STAGE ${currentStage} START! 🔥`, canvas.width/2 - 100, 150, '#ffd700', 28, true);
+        updateUI();
+    }
+
+    function update() {
+        if(gameState !== 'PLAY') return;
+        if (freezeFrames > 0) { freezeFrames--; requestAnimationFrame(update); return; }
+
+        let currentShakeForce = screenShake;
+        if(earthquakeActive && warningTimer > 0) currentShakeForce = Math.max(screenShake, 9);
+
+        let dangerRatio = Math.min(1, successfulParries / 20);
+        let skyColor1 = `rgb(${15 + dangerRatio * 25}, 15, ${21 - dangerRatio * 5})`;
+        let skyColor2 = `rgb(${22 + dangerRatio * 40}, 22, ${34 - dangerRatio * 10})`;
+        
+        let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        bgGrad.addColorStop(0, skyColor1); bgGrad.addColorStop(1, skyColor2);
+        ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        player.animFrame++;
+        if (currentShakeForce > 0) { ctx.save(); ctx.translate((Math.random() - 0.5) * currentShakeForce, (Math.random() - 0.5) * currentShakeForce); screenShake *= 0.82; if(screenShake < 0.5) screenShake = 0; }
+
+        if(earthquakeActive && warningTimer > 0) {
+            ctx.strokeStyle = '#ff3300'; ctx.lineWidth = 4; ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=25) { ctx.lineTo(i, CONFIG.GROUND_Y + 65 + (Math.random() - 0.5) * 16); }
+            ctx.stroke();
+            if(warningTimer < 25 && !earthquakeDamageTriggered) { if(player.state !== 'JUMP') { handlePlayerDamage(); earthquakeDamageTriggered = true; } }
+        }
+
+        // 바닥
+        ctx.strokeStyle = '#2d2d3d'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, CONFIG.GROUND_Y + 65); ctx.lineTo(canvas.width, CONFIG.GROUND_Y + 65); ctx.stroke();
+        ctx.strokeStyle = '#181822'; ctx.lineWidth = 2;
+        for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i, CONFIG.GROUND_Y + 65); ctx.lineTo(i - 15, canvas.height); ctx.stroke(); }
+
+        if(player.state === 'JUMP') { player.y += player.vY; player.vY += 0.55; if(player.y >= CONFIG.GROUND_Y) { player.y = CONFIG.GROUND_Y; player.state = 'IDLE'; earthquakeDamageTriggered = false; } }
+
+        if(player.color === '#cc00ff' && player.animFrame % 4 === 0) { shadows.push({ x: player.x, y: player.y, state: player.state, opacity: 0.5 }); }
+        for(let i = shadows.length - 1; i >= 0; i--) {
+            let sh = shadows[i]; sh.opacity -= 0.04; if(sh.opacity <= 0) { shadows.splice(i, 1); continue; }
+            ctx.save(); ctx.globalAlpha = sh.opacity; drawDetailedHumanoid(ctx, sh.x, sh.y, player.width, player.height, 'rgba(204, 0, 255, 0.5)', sh.state, player.animFrame, true); ctx.restore();
+        }
+
+        drawDetailedHumanoid(ctx, player.x, player.y, player.width, player.height, player.color, player.state, player.animFrame, true);
+        
+        if(player.state === 'PARRY' || player.isParryingInAir) {
+            ctx.save();
+            let glowColor = player.color === '#cc00ff' ? 'rgba(255, 0, 255, 0.4)' : (player.color === '#ff1111' ? 'rgba(255, 42, 42, 0.4)' : 'rgba(0, 255, 204, 0.4)'); 
+            ctx.strokeStyle = glowColor; ctx.lineWidth = 5; ctx.shadowBlur = 18; ctx.shadowColor = glowColor;
+            ctx.fillStyle = player.color === '#cc00ff' ? 'rgba(255, 0, 255, 0.05)' : (player.color === '#ff1111' ? 'rgba(255, 42, 42, 0.05)' : 'rgba(0, 255, 204, 0.05)');
+            ctx.beginPath(); ctx.arc(player.x + player.width/2, player.y + player.height/2, 42, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+        }
+
+        let now = Date.now();
+        if(!isBossMode) {
+            let currentSpawnInterval = Math.max(450, CONFIG.SPAWN_INTERVAL - (currentStage * 60));
+            if(now - lastSpawnTime > currentSpawnInterval) { spawnEnemy(); lastSpawnTime = now; }
+            if(successfulParries >= CONFIG.BOSS_TRIGGER_SCORE) { enemies = []; initBoss(); }
+        } else {
+            updateBoss(now);
+        }
+
+        if(isBossMode && boss) {
+            drawDetailedHumanoid(ctx, boss.renderX, CONFIG.GROUND_Y - 25, 75, 90, boss.isAngryCharge ? '#ff003c' : '#57606f', 'IDLE', player.animFrame, false, { isBoss: true, isDelayPattern: boss.isActingDelay, subType: boss.currentType, isAngryBoss: boss.isAngryCharge });
+            
+            if(boss.isAngryCharge) {
+                boss.renderX -= boss.chargeSpeed;
+                if(boss.renderX <= player.x + player.width && boss.renderX + 75 >= player.x) {
+                    if(player.state === 'PARRY' || player.isParryingInAir) { boss.isAngryCharge = false; boss.renderX = 630; handleParrySuccess({ x: player.x + 40, y: player.y + 30, height: 10, parryable: true }); } 
+                    else { boss.isAngryCharge = false; boss.renderX = 630; handlePlayerDamage(); }
+                }
+                if(boss.renderX < 40) { boss.isAngryCharge = false; boss.renderX = 630; }
+            } else {
+                if(boss.renderX > 620) boss.renderX -= 2;
+                if(boss.renderX < 610) boss.renderX += 2; 
+            }
+        }
+
+        // 투사체 처리
+        for(let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            
+            if(e.type === 'ARROW' && e.isTrick && e.x < 480 && !e.tricked) {
+                e.speed *= 1.6; 
+                e.y = CONFIG.GROUND_Y + (Math.random() > 0.5 ? 5 : 25); 
+                e.tricked = true;
+                createParticle(e.x, e.y, '#ffd700', 6);
+            }
+
+            if(e.isDelayPattern && !e.delayFinished) {
+                if(now < e.delayUntil) { e.x += 0.3; e.color = (Math.floor(now/80) % 2 === 0) ? '#ff003c' : '#440011'; } 
+                else { e.delayFinished = true; e.speed = 13; e.color = '#ff003c'; }
+            } else {
+                if(e.type === 'BOSS_DIAGONAL_ARROW') {
+                    if(!e.isDropping) {
+                        e.x -= e.speed * 0.4; e.y -= 7; // 상승선
+                        
+                        // 2. [대각 화살 궤도 완전 수정] 0.8초 경과 시, 플레이어의 실시간 X 좌표와 화살 위치의 정확한 비례 추적 공식 대입
+                        if(now - e.spawnTime > 800) { 
+                            e.isDropping = true; 
+                            e.y = CONFIG.GROUND_Y - 140; 
+                            // 플레이어 위치를 정밀 관통하는 낙하 시작 시점 X 좌표 동적 설계
+                            e.x = player.x + 215; 
+                            e.speed = 12.5; 
+                        } 
+                    } else {
+                        // 플레이어 머리를 스치고 지나가도록 사선 고속 강하 각도 동기화
+                        e.x -= e.speed; 
+                        e.y += 4.3; 
+                    }
+                } else {
+                    e.x -= e.speed;
+                }
+            }
+
+            if(e.type === 'ARROW' || e.type === 'BOSS_DIAGONAL_ARROW') {
+                ctx.save(); ctx.strokeStyle = e.color; ctx.lineWidth = 3; ctx.shadowBlur = 5; ctx.shadowColor = e.color;
+                if(e.type === 'BOSS_DIAGONAL_ARROW' && !e.isDropping) {
+                    ctx.translate(e.x, e.y); ctx.rotate(-Math.PI / 4);
+                    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(30,0); ctx.stroke();
+                } else {
+                    ctx.beginPath(); ctx.moveTo(e.x, e.y + e.height*0.5); ctx.lineTo(e.x + e.width, e.y + e.height*0.5); ctx.stroke();
+                    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(e.x, e.y + e.height*0.5); ctx.lineTo(e.x + 10, e.y); ctx.lineTo(e.x + 10, e.y + e.height); ctx.fill();
+                }
+                ctx.restore();
+            } 
+            else if(e.type === 'CHARGE') {
+                ctx.save(); let grad = ctx.createLinearGradient(e.x, e.y, e.x + e.width, e.y + e.height); grad.addColorStop(0, '#ff0055'); grad.addColorStop(1, '#330011'); ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(e.x + e.width, e.y + e.height);
+                for (let j = 0; j <= e.width; j += 10) { ctx.lineTo(e.x + e.width - j, (j % 20 === 0) ? e.y : e.y + e.height); }
+                ctx.lineTo(e.x, e.y + e.height); ctx.fill(); ctx.restore();
+            } 
+            else if(e.type === 'FAKE_EFF') { continue; }
+            else { drawDetailedHumanoid(ctx, e.x, e.y, e.width, e.height, e.color, 'IDLE', player.animFrame, false, e); }
+
+            let eTop = e.y; let eBottom = e.y + e.height;
+            let pTop = player.y; let pBottom = player.y + player.height;
+            if(player.state === 'DUCK') pTop = player.y + player.height * 0.4;
+
+            if(e.x <= player.x + player.width + 8 && e.x + e.width >= player.x) {
+                if (eTop < pBottom && eBottom > pTop) {
+                    let isHit = false;
+                    if(player.state === 'PARRY' || player.isParryingInAir) {
+                        if(e.parryable) { enemies.splice(i, 1); handleParrySuccess(e); continue; }
+                    } 
+                    if(e.attackType === 'SWORD') { isHit = true; } 
+                    else if(e.attackType === 'ARROW') { if(player.state !== 'DUCK') isHit = true; } 
+                    else if(e.attackType === 'CHARGE') { if(player.state !== 'JUMP') isHit = true; } 
+
+                    if(isHit) { enemies.splice(i, 1); handlePlayerDamage(); }
+                }
+            }
+            else if(e.x + e.width < 0) { enemies.splice(i, 1); }
+        }
+
+        if(warningTimer > 0) {
+            warningTimer--; ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(100, 100, 600, 60); ctx.strokeStyle = '#ff003c'; ctx.lineWidth = 3; ctx.strokeRect(100, 100, 600, 60);
+            if(Math.floor(warningTimer / 6) % 2 === 0) { ctx.fillStyle = '#ff2a2a'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000'; ctx.fillText(warningText, canvas.width/2, 138); }
+            ctx.restore(); if(warningTimer <= 0) { earthquakeActive = false; }
+        }
+
+        updateEffects();
+        if (currentShakeForce > 0) ctx.restore();
+        requestAnimationFrame(update);
+    }
+
+    function spawnEnemy() {
+        let rand = Math.random();
+        let type = 'SWORD', y = CONFIG.GROUND_Y, width = 35, height = 65, color = '#ec4849', attackType = 'SWORD', isTrick = false;
+
+        if(rand < 0.35) { 
+            type = 'ARROW'; y = CONFIG.GROUND_Y + 5; width = 40; height = 12; color = '#ff9f43'; attackType = 'ARROW';
+            if(Math.random() > 0.45) isTrick = true; 
+        } else if(rand < 0.65) { 
+            type = 'CHARGE'; y = CONFIG.GROUND_Y + 35; width = 55; height = 30; color = '#8395a7'; attackType = 'CHARGE';
+        }
+
+        enemies.push({
+            x: 850, y: y, width: width, height: height, type: type, attackType: attackType,
+            speed: 6.5 + (currentStage * 0.4) + (successfulParries * 0.15), color: color, parryable: (attackType !== 'CHARGE'), isTrick: isTrick, tricked: false
+        });
+    }
+
+    function initBoss() {
+        if(isBossMode) return; isBossMode = true; document.getElementById('boss-ui').style.display = 'flex'; 
+        createFloatingText(`STAGE ${currentStage} BOSS ACTOR RISE!!`, canvas.width/2 - 140, 70, '#ff2a2a', 24);
+        
+        // 스테이지 증가비례 보스 맥스체력 스케일링 가산 (+2씩 증가)
+        let scaledBossHp = CONFIG.BOSS_MAX_HP + (currentStage - 1) * 2;
+        boss = { hp: scaledBossHp, maxHp: scaledBossHp, lastAttackTime: Date.now(), attackCooldown: 1600, renderX: 850, isActingDelay: false, currentType: 'NONE', isAngryCharge: false, chargeSpeed: 0 };
+        updateUI();
+    }
+
+    function updateBoss(now) {
+        if(!boss || boss.isAngryCharge) return; 
+        if(now - boss.lastAttackTime > boss.attackCooldown) {
+            let pattern = Math.floor(Math.random() * 6); boss.attackCooldown = Math.max(1000, 2000 - (10 - boss.hp) * 110); boss.isActingDelay = false; boss.currentType = 'NONE';
+            
+            if(pattern === 0) { 
+                boss.isActingDelay = true;
+                enemies.push({ x: boss.renderX - 30, y: CONFIG.GROUND_Y, width: 45, height: 65, type: 'BOSS_SWORD', attackType: 'SWORD', speed: 3, color: '#ff0055', parryable: true, isDelayPattern: true, delayUntil: now + 1000, delayFinished: false, isBoss: true });
+            } 
+            else if(pattern === 1) { 
+                enemies.push({ x: boss.renderX - 20, y: CONFIG.GROUND_Y + 5, width: 40, height: 12, type: 'ARROW', attackType: 'ARROW', speed: 5, color: '#ff9f43', parryable: true, isTrick: true, tricked: false });
+            }
+            else if(pattern === 2) { 
+                enemies.push({ x: boss.renderX - 30, y: CONFIG.GROUND_Y + 35, width: 75, height: 30, type: 'CHARGE', attackType: 'CHARGE', speed: 9.5, color: '#b41414', parryable: false });
+            }
+            else if(pattern === 3) { 
+                // 대각 저격 화살 패턴 실행
+                enemies.push({ x: boss.renderX - 10, y: CONFIG.GROUND_Y - 20, width: 35, height: 12, type: 'BOSS_DIAGONAL_ARROW', attackType: 'ARROW', speed: 5, color: '#ffd700', parryable: true, isDropping: false, spawnTime: now });
+            }
+            else if(pattern === 4) {
+                boss.currentType = 'EARTHQUAKE'; earthquakeActive = true; earthquakeDamageTriggered = false; warningText = "⚠️ 비상! 광역 땅울림 파동! (점프 피하기!) ⚠️"; warningTimer = 85; 
+            }
+            else if(pattern === 5) { boss.isAngryCharge = true; boss.chargeSpeed = 13 + currentStage; boss.currentType = 'CHARGE_ATTACK'; }
+            boss.lastAttackTime = now;
+        }
+    }
+
+    function handleParrySuccess(enemy) {
+        let elapsed = Date.now() - parryTimer; let isPerfect = elapsed < (CONFIG.PARRY_WINDOW * 0.4); 
+        if(player.color === '#cc00ff') combo++;
+        combo++; if(!isBossMode) successfulParries++; 
+        
+        let skinMultiplier = player.color === '#ff1111' ? 2.0 : 1.0; 
+        let baseParryScore = 100 + (combo * 20); let finalAddedScore = 0;
+
+        if (isPerfect) {
+            freezeFrames = 8; screenShake = 20; finalAddedScore = Math.floor(baseParryScore * 3 * skinMultiplier); score += finalAddedScore;
+            createParticle(enemy.x, enemy.y, 'var(--perfect-color)', 25);
+            createFloatingText(`🔥 JUST PARRY! +${finalAddedScore}`, player.x - 35, player.y - 45, 'var(--perfect-color)', 24, true);
+        } else {
+            screenShake = 12; finalAddedScore = Math.floor(baseParryScore * skinMultiplier); score += finalAddedScore;
+            createParticle(enemy.x, enemy.y, 'var(--parry-color)', 15);
+            createFloatingText(`PARRY! +${finalAddedScore}`, player.x, player.y - 35, 'var(--parry-color)', 20, false);
+        }
+
+        if(combo > 0 && combo % CONFIG.COMBO_HEAL === 0) {
+            if(player.hp < player.maxHp) { player.hp++; createFloatingText("생명력 완전 회복! ♥", player.x, player.y - 65, '#00ff66', 22, false); } 
+            else { score += 500; createFloatingText("체력 만땅 보너스! +500", player.x, player.y - 65, '#ffd700', 18, false); }
+        }
+        
+        if(isBossMode && boss) {
+            boss.hp--; score += 300; 
+            createFloatingText(`BOSS HP -1 (+300)`, boss.renderX - 20, CONFIG.GROUND_Y - 40, '#ffd700', 25, false);
+            
+            // 보스 격파 시 라운드 클리어 연동 처리 (끝이 아니라 다음 라운드로 브릿지)
+            if(boss.hp <= 0) { 
+                score += 2000 * currentStage; // 스테이지 보너스 점수
+                nextStageSetup(); 
+            }
+        }
+        updateUI();
+    }
+
+    function handlePlayerDamage() {
+        combo = 0; player.hp--; screenShake = 22; createParticle(player.x + player.width/2, player.y + player.height/2, '#ff1111', 25);
+        createFloatingText("피격 (COMBO RESET)", player.x, player.y - 40, '#ff3838', 18, false);
+        if(player.hp <= 0) { endGame(false); }
+        updateUI();
+    }
+
+    function updateUI() {
+        let hearts = ''; for(let i=0; i<player.maxHp; i++) { hearts += i < player.hp ? '❤️' : '🖤'; }
+        document.getElementById('hp-display').innerText = hearts; document.getElementById('combo-display').innerText = combo; document.getElementById('score-display').innerText = score.toLocaleString(); 
+        
+        document.getElementById('boss-title').innerText = `군주 악스발드 (STAGE ${currentStage})`;
+        if(isBossMode && boss) { let pct = (boss.hp / boss.maxHp) * 100; document.getElementById('boss-hp-bar').style.width = `${pct}%`; }
+    }
+
+    function createParticle(x, y, color, count) {
+        for(let i=0; i<count; i++) { particles.push({ x: x, y: y, vX: (Math.random() - 0.5) * 12, vY: (Math.random() - 0.5) * 12, radius: Math.random() * 5 + 2, color: color, alpha: 1, decay: Math.random() * 0.035 + 0.02 }); }
+    }
+    function createFloatingText(text, x, y, color, size, isPerfect = false) { floatingTexts.push({ text: text, x: x, y: y, color: color, size: size, alpha: 1, isPerfect: isPerfect }); }
+
+    function updateEffects() {
+        for(let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vX; p.y += p.vY; p.alpha -= p.decay; if(p.alpha <= 0) { particles.splice(i, 1); continue; } ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        for(let i = floatingTexts.length - 1; i >= 0; i--) {
+            let t = floatingTexts[i]; t.y -= 1.2; t.alpha -= 0.022; if(t.alpha <= 0) { floatingTexts.splice(i, 1); continue; }
+            ctx.save(); ctx.globalAlpha = t.alpha; ctx.font = `bold ${t.size}px Arial`; ctx.strokeStyle = '#000000'; ctx.lineWidth = 5; ctx.strokeText(t.text, t.x, t.y); ctx.fillStyle = t.color; if(t.isPerfect) { ctx.shadowBlur = 12; ctx.shadowColor = '#ff00ff'; } ctx.fillText(t.text, t.x, t.y); ctx.restore();
+        }
+    }
+
+    function endGame(isWin) {
+        gameState = 'END'; const msgScreen = document.getElementById('msg-screen'); const title = document.getElementById('msg-title'); const sub = document.getElementById('msg-sub'); const finalScoreDisplay = document.getElementById('msg-score');
+        msgScreen.style.display = 'flex'; finalScoreDisplay.innerText = `최종 점수 : ${score.toLocaleString()} SCORE`;
+        title.innerText = "GAME OVER 💀"; title.style.color = CONFIG.ACCENT_COLOR; 
+        sub.innerText = `STAGE ${currentStage}에서 군주의 광폭 돌격과 전역 지진의 위력에 압도당했습니다.`;
+    }
+
+    function resetToLobby() { document.getElementById('msg-screen').style.display = 'none'; document.getElementById('lobby-screen').style.display = 'flex'; gameState = 'LOBBY'; ctx.clearRect(0, 0, canvas.width, canvas.height); }
+</script>
+</body>
+</html>
